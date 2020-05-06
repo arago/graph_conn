@@ -23,6 +23,9 @@ defmodule GraphConn.MixProject do
       name: "GraphConn",
       docs: _docs(),
       deps: _deps(),
+      build_path: "../../_build",
+      deps_path: "../../deps",
+      lockfile: "../../mix.lock",
       elixirc_paths: _elixirc_paths(Mix.env())
     ]
   end
@@ -32,7 +35,7 @@ defmodule GraphConn.MixProject do
     #  $> touch mix.exs && INTEGRATION_TESTS=true mix test
     [
       extra_applications: [:logger, :ssl, :certifi]
-    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") != "true")
+    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") == "false")
   end
 
   defp _application(true), do: [mod: {GraphConn.TestApplication, []}]
@@ -47,6 +50,7 @@ defmodule GraphConn.MixProject do
       {:jason, "~> 1.1"},
       ## needed for action handlers only
       {:con_cache, "~> 0.14"},
+      {:cowlib, "~> 2.8.0", override: true},
 
       # test dependencies
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},

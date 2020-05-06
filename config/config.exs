@@ -6,25 +6,27 @@ config :logger, :console,
   metadata: [:req_id, :pid]
 
 config :graph_conn, TestConn,
-  host: "localhost",
-  port: "8081",
+  url: "http://localhost:8081",
   insecure: true,
+  auth: [
   credentials: [
     client_id: "action_invoker",
     client_secret: "action_invoker_secret",
     username: "action_invoker_username",
     password: "action_invoker_password"
   ]
+  ]
 
 config :graph_conn, ActionHandler,
-  host: "localhost",
-  port: "8081",
+  url: "http://localhost:8081",
   insecure: true,
+  auth: [
   credentials: [
     client_id: "action_handler",
     client_secret: "action_handler_secret",
     username: "action_handler_username",
     password: "action_handler_password"
+  ]
   ]
 
 config :machine_gun,
