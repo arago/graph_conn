@@ -20,7 +20,7 @@ defmodule GraphConn.ConnectionManager do
 
   @typep version() :: %{path: String.t(), protocol: String.t(), subprotocol: String.t()}
 
-  @in_test? Mix.env == :test
+  @in_test? Mix.env() == :test
 
   defp _name(base_name),
     do: Module.concat(base_name, ConnectionManager)
@@ -300,7 +300,8 @@ defmodule GraphConn.ConnectionManager do
   def parse_urls(config) do
     %URI{
       host: host,
-      port: port
+      port: port,
+      scheme: scheme
     } =
       config
       |> Keyword.fetch!(:url)
@@ -310,21 +311,36 @@ defmodule GraphConn.ConnectionManager do
 
     %URI{
       host: auth_host,
-      port: auth_port
+      port: auth_port,
+      scheme: auth_scheme
     } =
       auth_config
       |> Keyword.get(:url, config[:url])
       |> URI.parse()
 
+    config =
+      config
+      |> Keyword.put(:host, host)
+      |> Keyword.put(:port, port)
+      |> Keyword.put(:transport, _transport_for_scheme(scheme))
+      |> Keyword.put(:insecure, _insecure_for_scheme(scheme, config[:insecure]))
+
     auth_config =
       auth_config
       |> Keyword.put(:host, auth_host)
       |> Keyword.put(:port, auth_port)
-      |> Keyword.put_new(:insecure, config[:insecure])
+      |> Keyword.put(:transport, _transport_for_scheme(auth_scheme))
+      |> Keyword.put(
+        :insecure,
+        _insecure_for_scheme(scheme, Keyword.get(auth_config, :insecure, config[:insecure]))
+      )
 
-    config
-    |> Keyword.put(:auth, auth_config)
-    |> Keyword.put(:host, host)
-    |> Keyword.put(:port, port)
+    Keyword.put(config, :auth, auth_config)
   end
+
+  defp _transport_for_scheme("https"), do: :tls
+  defp _transport_for_scheme("http"), do: :tcp
+
+  defp _insecure_for_scheme("http", _), do: true
+  defp _insecure_for_scheme("https", insecure), do: insecure
 end
