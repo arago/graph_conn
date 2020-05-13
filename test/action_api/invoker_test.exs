@@ -83,6 +83,13 @@ defmodule GraphConn.ActionApi.InvokerTest do
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
     end
 
+    test "request understands atom keys" do
+      params = %{other_handler: "Echo", command: "ls", timeout: 123}
+
+      assert {:ok, %{"command" => "ls", "timeout" => 123_000}} =
+               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
+    end
+
     test "returns nack for invalid capability" do
       assert {:error, {:nack, %{code: 404, message: "capability invalid_capability not found"}}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "invalid_capability", %{})
@@ -185,8 +192,27 @@ defmodule GraphConn.ActionApi.InvokerTest do
     #  assert_receive :done
     # end
 
+    test "connection crashes after request is sent but before response is received" do
+      params = %{"other_handler" => "Echo", "command" => "ls", "sleep" => 1000}
+      ticket_id = UUID.uuid4()
+      test_pid = self()
+
+      spawn(fn ->
+        assert {:ok, %{"command" => "ls"}} =
+                 ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
+
+        send(test_pid, :done)
+      end)
+
+      # Wait for ack to be recieved and then crash connection
+      Process.sleep(200)
+      _crash_connection()
+
+      assert_receive :done
+    end
+
     test "returns timeout if execution took too long" do
-      params = %{"other_handler" => "Echo", "command" => "ls", sleep: 10_000}
+      params = %{other_handler: "Echo", command: "ls", sleep: 10_000}
 
       assert {:error, {:exec_timeout, 3_000}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params,

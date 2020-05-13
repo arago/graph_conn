@@ -293,7 +293,12 @@ defmodule GraphConn.ActionApi.Invoker do
       def execute(ticket_id, action_handler_id, capability_name, %{} = params, opts \\ []) do
         Logger.info("Trying to send: #{params["req"]}")
         ack_timeout = Keyword.get(opts, :ack_timeout, @ack_timeout)
-        params = _inject_defaults(capability_name, params)
+
+        params =
+          params
+          |> Enum.map(fn {key, val} -> {to_string(key), val} end)
+          |> Enum.into(%{})
+          |> _inject_defaults(capability_name)
 
         timeout =
           case params["timeout"] do
@@ -327,7 +332,7 @@ defmodule GraphConn.ActionApi.Invoker do
         _execute(request, ack_timeout)
       end
 
-      defp _inject_defaults(capability_name, params) do
+      defp _inject_defaults(params, capability_name) do
         capability_name
         |> capability_defaults()
         |> Map.merge(params)
