@@ -50,7 +50,6 @@ defmodule GraphConn.ActionApi.InvokerTest do
 
     test "invokes HTTP with success" do
       params = %{
-        other_handler: "HTTP",
         method: "POST",
         url: "https://reqres.in/api/users",
         params: Jason.encode!(%{version: "t1"}),
@@ -60,7 +59,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
       }
 
       assert {:ok, %{"body" => body, "code" => 201, "exec" => _}} =
-               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
+               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "HTTP", params)
 
       assert %{
                "a" => 1,

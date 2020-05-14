@@ -87,6 +87,16 @@ defmodule GraphConn.TestRouter do
             "description" => "working directory for the script"
           }
         }
+      },
+      "HTTP" => %{
+        "description" => "this one invokes HTTP call",
+        "mandatoryParameters" => %{
+          "method" => %{"default" => "GET", "description" => "HTTP method"},
+          "url" => %{"description" => "url to hit"}
+        },
+        "optionalParameters" => %{
+          "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
+        }
       }
     }
 
