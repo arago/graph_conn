@@ -1,4 +1,4 @@
-defmodule GraphConn.TestSocket do
+defmodule GraphConn.Mock.Socket do
   @moduledoc false
 
   @behaviour :cowboy_websocket

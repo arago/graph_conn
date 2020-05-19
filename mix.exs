@@ -35,10 +35,10 @@ defmodule GraphConn.MixProject do
     #  $> touch mix.exs && INTEGRATION_TESTS=true mix test
     [
       extra_applications: [:logger, :ssl, :certifi]
-    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") == "false")
+    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") != "true")
   end
 
-  defp _application(true), do: [mod: {GraphConn.TestApplication, []}]
+  defp _application(true), do: [mod: {GraphConn.Mock.Application, []}]
   defp _application(false), do: []
 
   defp _deps do
@@ -56,7 +56,7 @@ defmodule GraphConn.MixProject do
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.21", runtime: false},
       {:excoveralls, "~> 0.12", runtime: false},
-      {:plug_cowboy, "~> 2.1", only: [:test]}
+      {:plug_cowboy, "~> 2.1"}
     ]
   end
 

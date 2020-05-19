@@ -1,6 +1,8 @@
 defmodule GraphConn.GunTest do
   use ExUnit.Case, async: true
 
+  alias GraphConn.Mock.Conn
+
   @tag :skip
   test "gun ws connection on local phoenix server" do
     # This one works in the moment of writing.
@@ -64,7 +66,7 @@ defmodule GraphConn.GunTest do
 
   @tag :skip
   test "on HIRO server" do
-    TestConn.start_supervisor(:from_config, %{forward_to: self()})
+    Conn.Mock.Conn.start_supervisor(:from_config, %{forward_to: self()})
     assert_receive {:conn_status_changed, :ready}
     api = :"action-ws"
 
@@ -82,8 +84,8 @@ defmodule GraphConn.GunTest do
       }
     }
 
-    # assert {:ok, %GraphConn.Response{body: body} = response} = TestConn.execute(api, request)
-    assert :ok = TestConn.execute(api, request)
+    # assert {:ok, %GraphConn.Response{body: body} = response} = Conn.execute(api, request)
+    assert :ok = Conn.execute(api, request)
     assert_receive :wip
     refute_receive _, 2_000
   end

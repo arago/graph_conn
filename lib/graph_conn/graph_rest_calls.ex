@@ -12,7 +12,7 @@ defmodule GraphConn.GraphRestCalls do
 
   ## Example:
 
-      iex> config = Application.get_env(:graph_conn, TestConn)
+      iex> config = Application.get_env(:graph_conn, GraphConn.Mock.Conn)
       iex> {:ok, _versions} = GraphConn.GraphRestCalls.get_versions(config)
       {:ok,
        %{
@@ -122,7 +122,7 @@ defmodule GraphConn.GraphRestCalls do
     end
   end
 
-  def execute(base_name, target_api, request, opts) do
+  def execute(base_name, target_api, request, opts \\ []) do
     with {:ok, %{path: namespace}} <- _get_version(base_name, target_api) do
       [{:config, config}] = :ets.lookup(base_name, :config)
 
@@ -140,6 +140,7 @@ defmodule GraphConn.GraphRestCalls do
     end
   end
 
+  defp _get_version(base_name, :base), do: {:ok, %{path: ""}}
   defp _get_version(base_name, target_api) do
     [{:versions, versions}] = :ets.lookup(base_name, :versions)
 

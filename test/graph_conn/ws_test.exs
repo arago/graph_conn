@@ -25,7 +25,7 @@ defmodule GraphConn.WSTest do
 
   defp _config() do
     :graph_conn
-    |> Application.get_env(Elixir.TestConn)
+    |> Application.get_env(GraphConn.Mock.Conn)
     |> GraphConn.ConnectionManager.parse_urls()
   end
 

@@ -1,8 +1,9 @@
-defmodule GraphConn.TestApplication do
+defmodule GraphConn.Mock.Application do
   @moduledoc false
 
   use Application
   require Logger
+  alias GraphConn.Mock
 
   @port 8081
 
@@ -11,7 +12,7 @@ defmodule GraphConn.TestApplication do
 
     children = [
       {Plug.Cowboy,
-       scheme: :http, plug: GraphConn.TestRouter, options: [dispatch: _dispatch(), port: @port]},
+       scheme: :http, plug: Mock.Router, options: [dispatch: _dispatch(), port: @port]},
       Registry.child_spec(
         keys: :duplicate,
         name: Registry.TestSockets
@@ -27,8 +28,8 @@ defmodule GraphConn.TestApplication do
     [
       {:_,
        [
-         {"/api/0.9/action-ws/[...]", GraphConn.TestSocket, []},
-         {:_, Plug.Cowboy.Handler, {GraphConn.TestRouter, []}}
+         {"/api/0.9/action-ws/[...]", Mock.Socket, []},
+         {:_, Plug.Cowboy.Handler, {Mock.Router, []}}
        ]}
     ]
   end
@@ -50,7 +51,7 @@ defmodule GraphConn.TestApplication do
 
     config =
       :graph_conn
-      |> Application.get_env(TestConn)
+      |> Application.get_env(Mock.Conn)
       |> Keyword.put(:url, "http://localhost:#{@port}")
       |> Keyword.put(:transport, :tcp)
 
@@ -61,7 +62,7 @@ defmodule GraphConn.TestApplication do
       config
       |> Keyword.put(:auth, auth_config)
 
-    Application.put_env(:graph_conn, TestConn, config)
+    Application.put_env(:graph_conn, Mock.Conn, config)
 
     handler_config =
       config

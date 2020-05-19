@@ -5,7 +5,7 @@ config :logger, :console,
   level: :debug,
   metadata: [:req_id, :pid]
 
-config :graph_conn, TestConn,
+config :graph_conn, GraphConn.Mock.Conn,
   url: "https://ec2-52-208-152-194.eu-west-1.compute.amazonaws.com:8443",
   insecure: true,
   auth: [
@@ -39,3 +39,4 @@ config :machine_gun,
     pool_max_overflow: 5,
     pool_timeout: 1000
   }
+
