@@ -58,7 +58,7 @@ defmodule GraphConn.Mock.Socket do
          %{type: "submitAction", id: id, capability: capability} = request,
          %{registry_key: "action_invoker"} = state
        ) do
-    capabilities = ActionInvoker.available_capabilities()
+    capabilities = GraphConn.Mock.get_capabilities()
 
     if capability in Map.keys(capabilities) do
       Registry.TestSockets

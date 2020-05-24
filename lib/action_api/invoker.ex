@@ -280,6 +280,22 @@ defmodule GraphConn.ActionApi.Invoker do
         |> Enum.into(%{})
       end
 
+      def reconfigure do
+        with_state(fn
+          %InvokerState{} = state ->
+            new_state =
+              %{}
+              |> _inject_capabilities()
+              |> _inject_applicabilities()
+              |> case do
+                %{capabilities: _, applicabilities: _} = token ->
+                  Map.merge(state, token)
+              end
+
+            {:ok, new_state}
+        end)
+      end
+
       @doc """
       Executes action on `action_handler_id` for given `ticket_id` and `capability_name`
       with provided `params` and returing either result from action handler or

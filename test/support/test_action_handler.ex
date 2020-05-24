@@ -9,6 +9,9 @@ defmodule TestActionHandler do
   def execute("ExecuteCommand", %{"other_handler" => "Echo"} = params),
     do: Echo.execute(params)
 
+  def execute("ExecuteLocalCommand", %{"command" => "echo test"} = _params),
+    do: {:ok, %{exec: "test\n"}}
+
   def execute("HTTP", params) do
     {:ok,
      %{

@@ -4,7 +4,18 @@ defmodule GraphConn.ActionApi.InvokerTest do
 
   describe "get_capabilities/0" do
     test "returns list of available capabilities" do
-      assert %{"ExecuteCommand" => _} = ActionInvoker.available_capabilities()
+      assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
+      refute Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
+
+      new_capabilities = """
+      {"additional_capability" : {}}
+      """
+      assert :ok = GraphConn.Mock.put_capabilities(new_capabilities)
+
+      ActionInvoker.reconfigure()
+
+      assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
+      assert Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
     end
   end
 
