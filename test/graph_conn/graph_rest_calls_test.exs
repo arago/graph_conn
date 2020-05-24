@@ -1,7 +1,7 @@
 defmodule GraphConn.GraphRestCallsTest do
   use ExUnit.Case, async: true
   import GraphConn.GraphRestCalls
-  alias GraphConn.{ConnectionManager,Mock.Conn}
+  alias GraphConn.{ConnectionManager, Mock.Conn}
 
   # doctest GraphConn.GraphRestCalls
 

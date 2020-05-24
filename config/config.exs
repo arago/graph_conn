@@ -40,3 +40,38 @@ config :machine_gun,
     pool_timeout: 1000
   }
 
+config :graph_conn, :mock,
+  capabilities: %{
+    "ExecuteCommand" => %{
+      "description" => "this one executes commands",
+      "mandatoryParameters" => %{
+        "command" => %{"description" => "command to execute"},
+        "host" => %{"description" => "hostname to execute command on"}
+      },
+      "optionalParameters" => %{
+        "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
+      }
+    },
+    "RunScript" => %{
+      "description" => "this one executes scripts",
+      "mandatoryParameters" => %{"command" => %{"description" => "script to run"}},
+      "optionalParameters" => %{
+        "timeout" => %{"default" => "120", "description" => "timeout in seconds"},
+        "workdir" => %{
+          "default" => "/tmp",
+          "description" => "working directory for the script"
+        }
+      }
+    },
+    "HTTP" => %{
+      "description" => "this one invokes HTTP call",
+      "mandatoryParameters" => %{
+        "method" => %{"default" => "GET", "description" => "HTTP method"},
+        "url" => %{"description" => "url to hit"}
+      },
+      "optionalParameters" => %{
+        "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
+      }
+    }
+  },
+  applicabilities: %{"action_handler" => %{}}

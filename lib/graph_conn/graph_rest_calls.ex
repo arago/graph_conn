@@ -141,6 +141,7 @@ defmodule GraphConn.GraphRestCalls do
   end
 
   defp _get_version(base_name, :base), do: {:ok, %{path: ""}}
+
   defp _get_version(base_name, target_api) do
     [{:versions, versions}] = :ets.lookup(base_name, :versions)
 
