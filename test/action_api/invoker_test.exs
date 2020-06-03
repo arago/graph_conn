@@ -191,6 +191,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
     #  assert_receive :done
     # end
 
+    @tag :integration
     test "connection crashes after request is sent but before response is received" do
       params = %{"other_handler" => "Echo", "command" => "ls", "sleep" => 1000}
       ticket_id = UUID.uuid4()

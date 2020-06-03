@@ -3,7 +3,7 @@ defmodule GraphConn.ActionApi.HandlerTest do
 
   describe "status/0" do
     test "is :ready when ws connection is established" do
-      assert :ready = ActionHandler.status()
+      assert :ready = TestActionHandler.status()
     end
   end
 end

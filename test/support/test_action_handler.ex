@@ -1,4 +1,4 @@
-defmodule ActionHandler do
+defmodule TestActionHandler do
   @moduledoc !"""
              Each execute function is executed in different task process.
              """
