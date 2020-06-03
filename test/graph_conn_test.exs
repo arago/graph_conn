@@ -18,10 +18,11 @@ defmodule GraphConnTest do
       config = Application.get_env(:graph_conn, TestConn)
 
       credentials =
-        config[:credentials]
+        config[:auth][:credentials]
         |> Keyword.put(:password, "wrong")
 
-      config = Keyword.put(config, :credentials, credentials)
+      auth_config = Keyword.put(config[:auth], :credentials, credentials)
+      config = Keyword.put(config, :auth, auth_config)
 
       assert capture_log(fn ->
                assert {:ok, pid} = _start_connection(config)

@@ -34,7 +34,6 @@ defmodule GraphConn.TestSocket do
   end
 
   defp _respond(%{type: "acknowledged", id: _id}, _state),
-    # do: Logger.debug("[TestSocket] Message acknowledged")
     do: :ok
 
   defp _respond(%{type: "submitAction", id: id, capability: "nack"}, state) do
@@ -136,7 +135,7 @@ defmodule GraphConn.TestSocket do
 
   defp _respond(msg, state) do
     response =
-      %{"error" => %{"code" => 400, "message" => "invalid action message #{inspect(msg)}"}}
+      %{"type" => "error", "code" => 400, "message" => "invalid action message #{inspect(msg)}"}
       |> Jason.encode!()
 
     Registry.TestSockets

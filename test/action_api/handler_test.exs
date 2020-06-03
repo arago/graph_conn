@@ -6,10 +6,4 @@ defmodule GraphConn.ActionApi.HandlerTest do
       assert :ready = ActionHandler.status()
     end
   end
-
-  describe "execute/2" do
-    test "sends push message to ActionWS API and returns ack and response synchronously" do
-      assert :ready = ActionHandler.status()
-    end
-  end
 end

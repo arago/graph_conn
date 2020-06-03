@@ -49,12 +49,12 @@ defmodule GraphConn.TestRouter do
 
   post "/api/:_/auth/app" do
     config_credentials =
-      Application.get_env(:graph_conn, TestConn)[:credentials]
+      Application.get_env(:graph_conn, TestConn)[:auth][:credentials]
       |> Enum.map(fn {key, val} -> {to_string(key), val} end)
       |> Enum.into(%{})
 
     handler_credentials =
-      Application.get_env(:graph_conn, ActionHandler)[:credentials]
+      Application.get_env(:graph_conn, ActionHandler)[:auth][:credentials]
       |> Enum.map(fn {key, val} -> {to_string(key), val} end)
       |> Enum.into(%{})
 

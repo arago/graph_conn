@@ -48,7 +48,19 @@ defmodule GraphConn.GraphRestCalls do
   def get_versions(config) do
     Logger.info("Getting supported Graph API versions...")
 
-    %Request{path: "/api/version"}
+    request = %Request{path: "/api/version"}
+
+    with {:ok, graph_versions} <- _get_versions(request, config),
+         {:ok, auth_versions} <- _get_versions(request, config[:auth]) do
+      auth_versions = Map.take(auth_versions, [:auth])
+
+      {:ok, Map.merge(graph_versions, auth_versions)}
+    end
+  end
+
+  @spec _get_versions(Request.t(), Keyword.t()) :: {:ok, versions()} | {:error, any()}
+  defp _get_versions(%Request{} = request, config) do
+    request
     |> _shoot(config)
     |> case do
       %MachineGun.Response{status_code: 200, body: body} ->
@@ -80,6 +92,7 @@ defmodule GraphConn.GraphRestCalls do
 
     body =
       config
+      |> Keyword.fetch!(:auth)
       |> Keyword.fetch!(:credentials)
       |> Enum.into(%{})
       |> Jason.encode!()
@@ -165,10 +178,13 @@ defmodule GraphConn.GraphRestCalls do
       "[GraphRestCaller] Sending #{String.upcase(to_string(request.method))}: #{uri}"
     end)
 
-    MachineGun.request!(request.method, uri, body, headers, %{
-      request_timeout: timeout,
-      pool_group: :graph_conn
-    })
+    {_, response} =
+      MachineGun.request(request.method, uri, body, headers, %{
+        request_timeout: timeout,
+        pool_group: :graph_conn
+      })
+
+    response
   end
 
   defp _build_uri(%Request{path: path, query_params: query}, config) do

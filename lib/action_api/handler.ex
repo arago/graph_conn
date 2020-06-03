@@ -77,12 +77,12 @@ defmodule GraphConn.ActionApi.Handler do
         do: :ok = GraphConn.open_ws_connection(__MODULE__, :"action-ws")
 
       def on_status_change(new_status, _),
-        do: Logger.debug("[ActionHandler] New ActionAPI status changed to #{new_status}")
+        do: Logger.debug("[ActionHandler] New ActionAPI status changed to #{inspect(new_status)}")
 
       @impl GraphConn
       @doc false
       def on_status_change(:"action-ws", status, _),
-        do: Logger.info("[ActionHandler] New ActionWS status: #{status}")
+        do: Logger.info("[ActionHandler] New ActionWS status: #{inspect(status)}")
 
       @impl GraphConn
       @doc false
@@ -115,7 +115,7 @@ defmodule GraphConn.ActionApi.Handler do
           Logger.debug("[ActionHandler] Received message: #{inspect(msg)}")
 
           GraphConn.execute(__MODULE__, :"action-ws", %GraphConn.Request{
-            body: %{id: req_id, type: "acknowledged", code: 200}
+            body: %{id: req_id, type: "acknowledged", code: 200, message: ""}
           })
 
           _request_cache_name()

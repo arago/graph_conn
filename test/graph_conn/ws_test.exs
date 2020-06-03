@@ -23,7 +23,12 @@ defmodule GraphConn.WSTest do
     end
   end
 
-  defp _config(), do: Application.get_env(:graph_conn, Elixir.TestConn)
+  defp _config() do
+    :graph_conn
+    |> Application.get_env(Elixir.TestConn)
+    |> GraphConn.ConnectionManager.parse_urls()
+  end
+
   defp _host, do: Keyword.fetch!(_config(), :host)
   defp _port, do: Keyword.fetch!(_config(), :port)
 end

@@ -26,30 +26,31 @@ defmodule GraphConn.ActionApi.InvokerTest do
 
   describe "execute/4" do
     test "sends push message to ActionWS API and returns response synchronously" do
-      params = %{"command" => "ls"}
+      params = %{"other_handler" => "Echo", "command" => "ls"}
 
       assert {:ok, %{"command" => "ls"}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
     end
 
+    @tag :integration
     test "invokes RunScript with success" do
       params = %{"command" => "ls", "host" => "localhost"}
 
       assert {:ok, response} = ActionInvoker.execute(UUID.uuid4(), _ah_id(), "RunScript", params)
+
       assert is_binary(response)
     end
 
-    test "invokes RunScript with failiour" do
-      params = %{"command" => "mix", "host" => "localhost"}
+    test "invokes RunScript with failure" do
+      params = %{"command" => "failing_command", "host" => "localhost"}
 
-      assert {:error, %{"exit_code" => 1, "response" => response}} =
+      assert {:error, "the command does not point to an existing file"} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "RunScript", params)
-
-      assert is_binary(response)
     end
 
     test "invokes HTTP with success" do
       params = %{
+        "other_handler" => "HTTP",
         method: "POST",
         url: "https://reqres.in/api/users",
         params: Jason.encode!(%{version: "t1"}),
@@ -58,19 +59,25 @@ defmodule GraphConn.ActionApi.InvokerTest do
         insecure: "false"
       }
 
-      assert {:ok, %{"body" => _, "code" => 201, "exec" => _}} =
+      assert {:ok, %{"body" => body, "code" => 201, "exec" => _}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
+
+      assert %{
+               "a" => 1,
+               "b" => "b",
+               "c" => [%{"aa" => 11, "bb" => nil}]
+             } = Jason.decode!(body)
     end
 
     test "injects default timeout when one is missing" do
-      params = %{"command" => "ls"}
+      params = %{"other_handler" => "Echo", "command" => "ls"}
 
-      assert {:ok, %{"command" => "ls", "timeout" => _}} =
+      assert {:ok, %{"other_handler" => "Echo", "command" => "ls", "timeout" => _}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
     end
 
     test "doesn't inject default timeout if one is provided" do
-      params = %{"command" => "ls", "timeout" => 123}
+      params = %{"other_handler" => "Echo", "command" => "ls", "timeout" => 123}
 
       assert {:ok, %{"command" => "ls", "timeout" => 123_000}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
@@ -82,15 +89,19 @@ defmodule GraphConn.ActionApi.InvokerTest do
     end
 
     test "returns error if response has error key" do
+      params = %{
+        "other_handler" => "Echo",
+        "return_error" => %{code: 404, message: "Error message"},
+        "timeout" => 5
+      }
+
       assert {:error, %{"code" => 404, "message" => "Error message"}} =
-               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", %{
-                 return_error: %{code: 404, message: "Error message"}
-               })
+               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
     end
 
     test "actions can be executed in parallel" do
       timeout = 55
-      params = %{"command" => "ls", "timeout" => timeout}
+      params = %{"other_handler" => "Echo", "command" => "ls", "timeout" => timeout}
       test_pid = self()
 
       x = 5
@@ -129,7 +140,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
     end
 
     test "retries sending request when ack timeout" do
-      params = %{"command" => "ls"}
+      params = %{"other_handler" => "Echo", "command" => "ls"}
 
       assert {:ok, %{"command" => "ls"}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params,
@@ -137,43 +148,45 @@ defmodule GraphConn.ActionApi.InvokerTest do
                )
     end
 
-    test "handler returns cached result for the same request" do
-      params = %{"command" => "ls", "timeout" => 3}
-      ticket_id = UUID.uuid4()
+    ## These should test Handler and first one needs to be changed
+    ## not to rely on log
+    # test "handler returns cached result for the same request" do
+    #  params = %{"other_handler" => "Echo", "command" => "ls", "timeout" => 3}
+    #  ticket_id = UUID.uuid4()
 
-      assert capture_log(fn ->
-               assert {:ok, %{"command" => "ls"}} =
-                        ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
-             end) =~ ~r/Executing "ExecuteCommand": %{"command" => "ls", "timeout" => 3000}/
+    #  assert capture_log(fn ->
+    #           assert {:ok, %{"command" => "ls"}} =
+    #                    ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
+    #         end) =~ ~r/Executing ExecuteCommand on/
 
-      refute capture_log(fn ->
-               assert {:ok, %{"command" => "ls"}} =
-                        ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params,
-                          timeout: 5_000
-                        )
-             end) =~ ~r/Executing "ExecuteCommand": %{"command" => "ls", "timeout" => 3000}/
-    end
+    #  refute capture_log(fn ->
+    #           assert {:ok, %{"command" => "ls"}} =
+    #                    ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params,
+    #                      timeout: 5_000
+    #                    )
+    #         end) =~ ~r/Executing ExecuteCommand on/
+    # end
 
-    test "second request with the same id is sent before handler sends back response" do
-      params = %{"command" => "ls", "sleep" => 100}
-      ticket_id = UUID.uuid4()
-      test_pid = self()
+    # test "second request with the same id is sent before handler sends back response" do
+    #  params = %{"other_handler" => "Echo", "command" => "ls", "sleep" => 100}
+    #  ticket_id = UUID.uuid4()
+    #  test_pid = self()
 
-      spawn(fn ->
-        assert {:ok, %{"command" => "ls"}} =
-                 ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
+    #  spawn(fn ->
+    #    assert {:ok, %{"command" => "ls"}} =
+    #             ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
 
-        send(test_pid, :done)
-      end)
+    #    send(test_pid, :done)
+    #  end)
 
-      assert {:ok, %{"command" => "ls"}} =
-               ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
+    #  assert {:ok, %{"command" => "ls"}} =
+    #           ActionInvoker.execute(ticket_id, _ah_id(), "ExecuteCommand", params)
 
-      assert_receive :done
-    end
+    #  assert_receive :done
+    # end
 
     test "returns timeout if execution took too long" do
-      params = %{"command" => "ls", sleep: 10_000}
+      params = %{"other_handler" => "Echo", "command" => "ls", sleep: 10_000}
 
       assert {:error, {:exec_timeout, 3_000}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params,

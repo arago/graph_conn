@@ -7,35 +7,7 @@ defmodule GraphConn.TestApplication do
   @port 8081
 
   def start(_type, _args) do
-    invoker_credentials = [
-      client_id: "action_invoker",
-      client_secret: "action_invoker_secret",
-      username: "action_invoker_username",
-      password: "action_invoker_password"
-    ]
-
-    config =
-      :graph_conn
-      |> Application.get_env(TestConn)
-      |> Keyword.put(:host, "localhost")
-      |> Keyword.put(:port, @port)
-      |> Keyword.put(:transport, :tcp)
-      |> Keyword.put(:credentials, invoker_credentials)
-
-    Application.put_env(:graph_conn, TestConn, config)
-
-    handler_credentials = [
-      client_id: "action_handler",
-      client_secret: "action_handler_secret",
-      username: "action_handler_username",
-      password: "action_handler_password"
-    ]
-
-    handler_config =
-      config
-      |> Keyword.put(:credentials, handler_credentials)
-
-    Application.put_env(:graph_conn, ActionHandler, handler_config)
+    _inject_local_config()
 
     children = [
       {Plug.Cowboy,
@@ -59,5 +31,42 @@ defmodule GraphConn.TestApplication do
          {:_, Plug.Cowboy.Handler, {GraphConn.TestRouter, []}}
        ]}
     ]
+  end
+
+  defp _inject_local_config do
+    invoker_credentials = [
+      client_id: "action_invoker",
+      client_secret: "action_invoker_secret",
+      username: "action_invoker_username",
+      password: "action_invoker_password"
+    ]
+
+    handler_credentials = [
+      client_id: "action_handler",
+      client_secret: "action_handler_secret",
+      username: "action_handler_username",
+      password: "action_handler_password"
+    ]
+
+    config =
+      :graph_conn
+      |> Application.get_env(TestConn)
+      |> Keyword.put(:url, "http://localhost:#{@port}")
+      |> Keyword.put(:transport, :tcp)
+
+    auth_config = [credentials: invoker_credentials]
+    handler_auth_config = [credentials: handler_credentials]
+
+    config =
+      config
+      |> Keyword.put(:auth, auth_config)
+
+    Application.put_env(:graph_conn, TestConn, config)
+
+    handler_config =
+      config
+      |> Keyword.put(:auth, handler_auth_config)
+
+    Application.put_env(:graph_conn, ActionHandler, handler_config)
   end
 end

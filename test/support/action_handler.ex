@@ -4,18 +4,25 @@ defmodule ActionHandler do
              """
 
   use GraphConn.ActionApi.Handler
+  alias GraphConn.ActionApi.Handler.Echo
 
-  def execute("ExecuteCommand", params) do
-    (params["sleep"] || Enum.random(1..5))
-    |> Process.sleep()
+  def execute("ExecuteCommand", %{"other_handler" => "Echo"} = params),
+    do: Echo.execute(params)
 
-    case params do
-      %{"return_error" => error} ->
-        {:error, error}
+  def execute("ExecuteCommand", %{"other_handler" => "HTTP"} = params) do
+    {:ok,
+     %{
+       "body" => params["body"],
+       "code" => 201,
+       "exec" =>
+         "POST https://reqres.in/api/users?{\"version\":\"t1\"} {\"a\":1,\"b\":\"b\",\"c\":[{\"aa\":11,\"bb\":null}]}"
+     }}
+  end
 
-      _ ->
-        {:ok, params}
-    end
+  def execute("RunScript", %{"host" => "localhost"} = params) do
+    {:ok, params}
+
+    {:error, "the command does not point to an existing file"}
   end
 
   @spec default_execution_timeout(String.t()) :: non_neg_integer()

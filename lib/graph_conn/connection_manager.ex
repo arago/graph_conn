@@ -20,6 +20,8 @@ defmodule GraphConn.ConnectionManager do
 
   @typep version() :: %{path: String.t(), protocol: String.t(), subprotocol: String.t()}
 
+  @in_test? Mix.env == :test
+
   defp _name(base_name),
     do: Module.concat(base_name, ConnectionManager)
 
@@ -265,9 +267,10 @@ defmodule GraphConn.ConnectionManager do
     opts = [:named_table, read_concurrency: true]
 
     # we need public access to the table so we can change token from test process.
-    opts = if Mix.env() == :test, do: [:public | opts], else: opts
+    opts = if @in_test?, do: [:public | opts], else: opts
     ^base_name = :ets.new(base_name, opts)
 
+    config = parse_urls(config)
     _reset_ets(base_name, config)
   end
 
@@ -291,5 +294,37 @@ defmodule GraphConn.ConnectionManager do
       [{:versions, versions}] = :ets.lookup(base_name, :versions)
       versions
     end
+  end
+
+  @spec parse_urls(Keyword.t()) :: Keyword.t()
+  def parse_urls(config) do
+    %URI{
+      host: host,
+      port: port
+    } =
+      config
+      |> Keyword.fetch!(:url)
+      |> URI.parse()
+
+    auth_config = Keyword.fetch!(config, :auth)
+
+    %URI{
+      host: auth_host,
+      port: auth_port
+    } =
+      auth_config
+      |> Keyword.get(:url, config[:url])
+      |> URI.parse()
+
+    auth_config =
+      auth_config
+      |> Keyword.put(:host, auth_host)
+      |> Keyword.put(:port, auth_port)
+      |> Keyword.put_new(:insecure, config[:insecure])
+
+    config
+    |> Keyword.put(:auth, auth_config)
+    |> Keyword.put(:host, host)
+    |> Keyword.put(:port, port)
   end
 end
