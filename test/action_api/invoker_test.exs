@@ -50,7 +50,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
 
     test "invokes HTTP with success" do
       params = %{
-        "other_handler" => "HTTP",
+        other_handler: "HTTP",
         method: "POST",
         url: "https://reqres.in/api/users",
         params: Jason.encode!(%{version: "t1"}),
