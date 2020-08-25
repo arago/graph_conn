@@ -225,6 +225,9 @@ defmodule GraphConn.ActionApi.Invoker do
           })
       end
 
+      def handle_message(:"action-ws", %{"type" => "configChanged"} = msg, %InvokerState{}),
+        do: on_config_changed()
+
       def handle_message(:"action-ws", msg, %InvokerState{}) do
         Logger.error(
           "[ActionInvoker] Received unexpected message from action-ws: #{inspect(msg)}"
@@ -281,6 +284,8 @@ defmodule GraphConn.ActionApi.Invoker do
       end
 
       def reconfigure do
+        Logger.info("[ActionInvoker] Reconfiguring...")
+
         with_state(fn
           %InvokerState{} = state ->
             new_state =
@@ -449,6 +454,12 @@ defmodule GraphConn.ActionApi.Invoker do
 
       defp _open_ws_connection(%{} = token),
         do: token
+
+      @spec on_config_changed() :: any()
+      def on_config_changed,
+        do: Logger.warn("[ActionInvoker] Received unhandled configChanged message")
+
+      defoverridable on_config_changed: 0
     end
   end
 end

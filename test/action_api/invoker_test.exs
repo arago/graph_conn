@@ -10,6 +10,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
       new_capabilities = """
       {"additional_capability" : {}}
       """
+
       assert :ok = GraphConn.Mock.put_capabilities(new_capabilities)
 
       ActionInvoker.reconfigure()
