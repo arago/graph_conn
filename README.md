@@ -4,12 +4,12 @@ This library represent communication layer between HIRO engine and HIRO Graph se
 
 ## Installation
 
-Use library in this repo using relative path:
+Use library in this repo using git path:
 
 ```elixir
 def deps do
   [
-    {:graph_conn, path: "../graph_conn"}
+    {:graph_conn, git: "git@github.com:arago/graph_conn.git"}
   ]
 end
 ```
