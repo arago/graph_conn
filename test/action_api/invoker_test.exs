@@ -1,6 +1,5 @@
 defmodule GraphConn.ActionApi.InvokerTest do
   use ExUnit.Case, async: true
-  import ExUnit.CaptureLog
 
   describe "get_capabilities/0" do
     test "returns list of available capabilities" do

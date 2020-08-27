@@ -135,12 +135,31 @@ defmodule GraphConn.GraphRestCalls do
       request
       |> _inject_namespace(namespace)
       |> _inject_token(token)
-      |> _shoot(config, opts)
-      |> _process_response()
+      |> _execute(config, opts)
     end
   end
 
-  defp _get_version(base_name, :base), do: {:ok, %{path: ""}}
+  defp _execute(request, config, opts, attempt \\ 1) do
+    response =
+      request
+      |> _shoot(config, opts)
+      |> _process_response()
+
+    case {response, attempt} do
+      {{:retry, _}, attempt} when attempt < 6 ->
+        Process.sleep(1_000)
+        Logger.info("[GraphRestCalls] Retrying request...")
+        _execute(request, config, opts, attempt + 1)
+
+      {{:retry, error}, _attempt} ->
+        error
+
+      {other, _attempt} ->
+        other
+    end
+  end
+
+  defp _get_version(_base_name, :base), do: {:ok, %{path: ""}}
 
   defp _get_version(base_name, target_api) do
     [{:versions, versions}] = :ets.lookup(base_name, :versions)
@@ -228,6 +247,15 @@ defmodule GraphConn.GraphRestCalls do
     {:ok, response}
   end
 
-  defp _process_response(error),
-    do: error
+  defp _process_response(
+         %MachineGun.Error{reason: {:stop, {:goaway, _, _, _}, _} = reason} = response
+       ) do
+    Logger.warn("[GraphRestCalls] Received GOAWAY: #{inspect(reason)}")
+    {:retry, response}
+  end
+
+  defp _process_response(error) do
+    Logger.error("[GraphRestCalls] Received unhandled REST response: #{inspect(error)}")
+    error
+  end
 end

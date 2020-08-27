@@ -1,15 +1,16 @@
 # GraphConn
 
-This library represent communication layer between HIRO engine and HIRO Graph server.
+This library serves as a communication layer between HIRO engine and ActionHandler on one side,
+and HIRO Graph server on the other.
 
 ## Installation
 
-Use library in this repo using git path:
+Import library as dependency using git path (and optional tag/branch):
 
 ```elixir
 def deps do
   [
-    {:graph_conn, git: "git@github.com:arago/graph_conn.git"}
+    {:graph_conn, git: "git@github.com:arago/graph_conn.git", tag: "latest"}
   ]
 end
 ```

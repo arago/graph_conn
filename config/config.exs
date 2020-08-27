@@ -75,3 +75,5 @@ config :graph_conn, :mock,
     }
   },
   applicabilities: %{"action_handler" => %{}}
+
+import_config "#{Mix.env()}.exs"

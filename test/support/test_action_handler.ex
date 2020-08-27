@@ -28,10 +28,12 @@ defmodule TestActionHandler do
     {:error, "the command does not point to an existing file"}
   end
 
+  @impl GraphConn.ActionApi.Handler
   @spec default_execution_timeout(String.t()) :: non_neg_integer()
   def default_execution_timeout("ExecuteCommand"),
     do: 10_000
 
+  @impl GraphConn.ActionApi.Handler
   @spec resend_response_timeout() :: non_neg_integer()
   def resend_response_timeout,
     do: 3_000

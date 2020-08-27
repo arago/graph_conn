@@ -17,15 +17,13 @@ defmodule GraphConn.MixProject do
         docs: :test,
         bless: :test
       ],
-      dialyzer: [
-        plt_add_apps: [:mix, :certifi]
-      ],
+      # dialyzer: [
+      #  plt_add_deps: :apps_direct,
+      #  plt_add_apps: [:mix, :ex_unit, :gun]
+      # ],
       name: "GraphConn",
       docs: _docs(),
       deps: _deps(),
-      build_path: "../../_build",
-      deps_path: "../../deps",
-      lockfile: "../../mix.lock",
       elixirc_paths: _elixirc_paths(Mix.env())
     ]
   end
@@ -54,8 +52,8 @@ defmodule GraphConn.MixProject do
 
       # test dependencies
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.21", runtime: false},
-      {:excoveralls, "~> 0.12", runtime: false},
+      {:ex_doc, "~> 0.21", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.12", only: [:dev, :test], runtime: false},
       {:plug_cowboy, "~> 2.1"}
     ]
   end
