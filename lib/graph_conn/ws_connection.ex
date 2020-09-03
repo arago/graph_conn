@@ -13,10 +13,11 @@ defmodule GraphConn.WsConnection do
             api: atom(),
             internal_state: map(),
             status: GraphConn.status(),
+            last_pong: DateTime.t(),
             conn_pid: nil | pid()
           }
 
-    @enforce_keys ~w(base_name api internal_state status)a
+    @enforce_keys ~w(base_name api internal_state status last_pong)a
     defstruct @enforce_keys ++ ~w(conn_pid)a
   end
 
@@ -54,7 +55,8 @@ defmodule GraphConn.WsConnection do
         base_name: base_name,
         api: api,
         internal_state: internal_state,
-        status: status
+        status: status,
+        last_pong: DateTime.utc_now()
       }
       |> _connect(config)
       |> _ws_upgrade(version.path, version.subprotocol, token)
@@ -77,6 +79,38 @@ defmodule GraphConn.WsConnection do
     msg = Jason.decode!(text)
     apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
     {:noreply, state}
+  end
+
+  def handle_info(
+        {:gun_ws, conn_pid, _stream_ref, :ping},
+        %State{conn_pid: conn_pid} = state
+      ) do
+    Logger.debug("[WsConnection] Ignore received ping, gun will send pong")
+    {:noreply, state}
+  end
+
+  def handle_info(
+        {:gun_ws, conn_pid, _stream_ref, :pong},
+        %State{conn_pid: conn_pid} = state
+      ) do
+    Logger.debug("[WsConnection] Received pong")
+    {:noreply, %{state | last_pong: DateTime.utc_now()}}
+  end
+
+  def handle_info(:check_last_pong, %State{} = state) do
+    Logger.debug("[WsConnection] checking last pong")
+    reconnect_after = 30
+
+    DateTime.utc_now()
+    |> DateTime.diff(state.last_pong)
+    |> case do
+      diff when diff > reconnect_after ->
+        {:stop, {:error, "Missing pong for more than #{reconnect_after} seconds", state}}
+
+      _ ->
+        Process.send_after(self(), :check_last_pong, 10_000)
+        {:noreply, state}
+    end
   end
 
   def handle_info({:DOWN, _, :process, conn_pid, reason}, %State{conn_pid: conn_pid} = state) do
@@ -121,6 +155,7 @@ defmodule GraphConn.WsConnection do
     Logger.info("Upgrading connection...")
     :ok = WS.ws_upgrade(conn_pid, path, subprotocol, token)
     Logger.info("WebSocket upgrade succeeded.")
+    Process.send_after(self(), :check_last_pong, 10_000)
     state
   end
 end

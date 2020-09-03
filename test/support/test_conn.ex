@@ -1,4 +1,4 @@
-defmodule GraphConn.Mock.Conn do
+defmodule GraphConn.TestConn do
   @moduledoc false
 
   use GraphConn, otp_app: :graph_conn

@@ -15,6 +15,44 @@ def deps do
 end
 ```
 
+## Test
+
+Run `mix test` to run ActionInvoker and ActionHandler tests against local mock server. For tests running through Graph create `config/git_ignored.exs` file and set with correct credentials:
+
+```
+import Config
+
+config :graph_conn, GraphConn.TestConn,
+  url: "https://ec2-63-33-203-84.eu-west-1.compute.amazonaws.com:8443",
+  insecure: true,
+  auth: [
+    credentials: [
+      client_id: "<CLIENT_ID>",
+      client_secret: "<CLIENT_SECRET>",
+      username: "<USERNAME>",
+      password: "<PASSWORD>"
+    ]
+  ]
+
+config :graph_conn, GraphConn.Test.ActionHandler,
+  url: "https://ec2-63-33-203-84.eu-west-1.compute.amazonaws.com:8443",
+  insecure: true,
+  auth: [
+    credentials: [
+      client_id: "<AH_CLIENT_ID>",
+      client_secret: "<AH_CLIENT_SECRET>",
+      username: "<AH_USERNAME>",
+      password: "<AH_PASSWORD>"
+    ]
+  ]
+```
+
+and then run
+
+```
+INTEGRATION_TESTS=true mix test
+```
+
 ## Usage
 
 ### Define your Conn module

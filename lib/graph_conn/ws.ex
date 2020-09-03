@@ -41,7 +41,10 @@ defmodule GraphConn.WS do
         conn_pid,
         path,
         [],
-        %{protocols: [{subprotocol, :gun_ws_h}, {"token-#{token}", :gun_ws_h}]}
+        %{
+          silence_pings: false,
+          protocols: [{subprotocol, :gun_ws_h}, {"token-#{token}", :gun_ws_h}]
+        }
       )
 
     _async_response(conn_pid, stream_ref)

@@ -12,7 +12,7 @@ defmodule GraphConn.GraphRestCalls do
 
   ## Example:
 
-      iex> config = Application.get_env(:graph_conn, GraphConn.Mock.Conn)
+      iex> config = Application.get_env(:graph_conn, GraphConn.TestConn)
       iex> {:ok, _versions} = GraphConn.GraphRestCalls.get_versions(config)
       {:ok,
        %{

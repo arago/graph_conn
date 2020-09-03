@@ -143,9 +143,7 @@ defmodule GraphConn.ActionApi.Handler do
       end
 
       def handle_message(:"action-ws", msg, _) do
-        Logger.error(
-          "[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}"
-        )
+        Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
       end
 
       @spec default_execution_timeout(String.t()) :: non_neg_integer()
@@ -156,17 +154,12 @@ defmodule GraphConn.ActionApi.Handler do
       def resend_response_timeout,
         do: 3_000
 
-      defoverridable default_execution_timeout: 1, resend_response_timeout: 0
-      @before_compile GraphConn.ActionApi.Handler
-    end
-  end
-
-  defmacro __before_compile__(_env) do
-    quote do
       def execute(capability, _params) do
         Logger.warn("[ActionHandler] Unhandled capability received: #{capability}")
         {:error, %{code: 404, message: "Unhandled capability #{inspect(capability)}"}}
       end
+
+      defoverridable default_execution_timeout: 1, resend_response_timeout: 0, execute: 2
     end
   end
 end

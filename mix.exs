@@ -29,21 +29,17 @@ defmodule GraphConn.MixProject do
   end
 
   def application do
-    # on local machine, when switching between integration and mock tests, you need to `touch mix.exs` first:
-    #  $> touch mix.exs && INTEGRATION_TESTS=true mix test
     [
       extra_applications: [:logger, :ssl, :certifi]
-    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") != "true")
+    ]
   end
-
-  defp _application(true), do: [mod: {GraphConn.Mock.Application, []}]
-  defp _application(false), do: []
 
   defp _deps do
     [
       {:elixir_uuid, "~> 1.2"},
       {:machine_gun, "~> 0.1.6"},
-      {:gun, "~> 1.3.1"},
+      # {:gun, "~> 1.3.3"},
+      {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
       {:ssl_verify_fun, "~> 1.1"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only

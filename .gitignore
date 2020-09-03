@@ -22,3 +22,6 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 graph_conn-*.tar
 
+# This config file should be used for local dev and testing and it contains
+# real server urls and credentials, thus it must be git ignored.
+/config/git_ignored.exs
