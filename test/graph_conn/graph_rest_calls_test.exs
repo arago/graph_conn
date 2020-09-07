@@ -1,7 +1,7 @@
 defmodule GraphConn.GraphRestCallsTest do
   use ExUnit.Case, async: true
   import GraphConn.GraphRestCalls
-  alias GraphConn.{ConnectionManager, Mock.Conn}
+  alias GraphConn.{ConnectionManager, TestConn}
 
   # doctest GraphConn.GraphRestCalls
 
@@ -9,7 +9,7 @@ defmodule GraphConn.GraphRestCallsTest do
     test "returns api versions" do
       config =
         :graph_conn
-        |> Application.get_env(Conn)
+        |> Application.get_env(TestConn)
         |> ConnectionManager.parse_urls()
 
       assert {:ok, %{:"action-ws" => %{path: _, protocol: _, subprotocol: _}}} =
@@ -21,7 +21,7 @@ defmodule GraphConn.GraphRestCallsTest do
     test "returns token" do
       config =
         :graph_conn
-        |> Application.get_env(Conn)
+        |> Application.get_env(TestConn)
         |> ConnectionManager.parse_urls()
 
       {:ok, versions} = get_versions(config)

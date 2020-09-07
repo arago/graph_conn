@@ -1,8 +1,7 @@
-defmodule GraphConn.Mock.Router do
+defmodule GraphConn.Test.MockRouter do
   @moduledoc false
 
   use Plug.Router
-  alias GraphConn.Mock.Conn
 
   plug(Plug.Parsers,
     parsers: [:json],
@@ -50,12 +49,12 @@ defmodule GraphConn.Mock.Router do
 
   post "/api/:_/auth/app" do
     config_credentials =
-      Application.get_env(:graph_conn, Conn)[:auth][:credentials]
+      GraphConn.Test.MockServer.valid_invoker_credentials()
       |> Enum.map(fn {key, val} -> {to_string(key), val} end)
       |> Enum.into(%{})
 
     handler_credentials =
-      Application.get_env(:graph_conn, ActionHandler)[:auth][:credentials]
+      GraphConn.Test.MockServer.valid_handler_credentials()
       |> Enum.map(fn {key, val} -> {to_string(key), val} end)
       |> Enum.into(%{})
 

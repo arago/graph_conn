@@ -1,5 +1,7 @@
-defmodule GraphConn.Mock.Socket do
+defmodule GraphConn.Test.MockSocket do
   @moduledoc false
+
+  require Logger
 
   @behaviour :cowboy_websocket
 
@@ -21,6 +23,12 @@ defmodule GraphConn.Mock.Socket do
   def websocket_init(state) do
     Registry.TestSockets
     |> Registry.register(state.registry_key, {})
+
+    {:ok, state}
+  end
+
+  def websocket_handle(:ping, state) do
+    Logger.debug("[MockSocket] Received PING")
 
     {:ok, state}
   end

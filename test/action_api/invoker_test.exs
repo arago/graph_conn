@@ -1,22 +1,23 @@
 defmodule GraphConn.ActionApi.InvokerTest do
   use ExUnit.Case, async: true
-  import ExUnit.CaptureLog
 
   describe "get_capabilities/0" do
     test "returns list of available capabilities" do
-      assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
-      refute Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
+      _only_with_mock_server(fn ->
+        assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
+        refute Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
 
-      new_capabilities = """
-      {"additional_capability" : {}}
-      """
+        new_capabilities = """
+        {"additional_capability" : {}}
+        """
 
-      assert :ok = GraphConn.Mock.put_capabilities(new_capabilities)
+        assert :ok = GraphConn.Mock.put_capabilities(new_capabilities)
 
-      ActionInvoker.reconfigure()
+        ActionInvoker.reconfigure()
 
-      assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
-      assert Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
+        assert Map.has_key?(ActionInvoker.available_capabilities(), "ExecuteCommand")
+        assert Map.has_key?(ActionInvoker.available_capabilities(), "additional_capability")
+      end)
     end
   end
 
@@ -61,23 +62,25 @@ defmodule GraphConn.ActionApi.InvokerTest do
     end
 
     test "invokes HTTP with success" do
-      params = %{
-        method: "POST",
-        url: "https://reqres.in/api/users",
-        params: Jason.encode!(%{version: "t1"}),
-        body: Jason.encode!(%{a: 1, b: "b", c: [%{aa: 11, bb: nil}]}),
-        headers: "Content-Type=application/json\nAccept=application/json",
-        insecure: "false"
-      }
+      _only_with_mock_server(fn ->
+        params = %{
+          method: "POST",
+          url: "https://reqres.in/api/users",
+          params: Jason.encode!(%{version: "t1"}),
+          body: Jason.encode!(%{a: 1, b: "b", c: [%{aa: 11, bb: nil}]}),
+          headers: "Content-Type=application/json\nAccept=application/json",
+          insecure: "false"
+        }
 
-      assert {:ok, %{"body" => body, "code" => 201, "exec" => _}} =
-               ActionInvoker.execute(UUID.uuid4(), _ah_id(), "HTTP", params)
+        assert {:ok, %{"body" => body, "code" => 201, "exec" => _}} =
+                 ActionInvoker.execute(UUID.uuid4(), _ah_id(), "HTTP", params)
 
-      assert %{
-               "a" => 1,
-               "b" => "b",
-               "c" => [%{"aa" => 11, "bb" => nil}]
-             } = Jason.decode!(body)
+        assert %{
+                 "a" => 1,
+                 "b" => "b",
+                 "c" => [%{"aa" => 11, "bb" => nil}]
+               } = Jason.decode!(body)
+      end)
     end
 
     test "injects default timeout when one is missing" do
@@ -254,5 +257,9 @@ defmodule GraphConn.ActionApi.InvokerTest do
     Process.exit(gun_conn_pid, :test_wants_you_dead)
 
     refute Process.alive?(gun_conn_pid)
+  end
+
+  defp _only_with_mock_server(fun) do
+    if Process.whereis(GraphConn.Test.MockServer), do: fun.()
   end
 end

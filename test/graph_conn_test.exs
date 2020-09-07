@@ -1,21 +1,22 @@
 defmodule GraphConnTest do
   use ExUnit.Case, async: true
-  alias GraphConn.{Request, Response, Mock}
+  alias GraphConn.{Request, Response}
+  alias GraphConn.TestConn
   import ExUnit.CaptureLog
 
   describe "connection" do
     test "accepts configuration and establishes connection" do
-      config = Application.get_env(:graph_conn, Mock.Conn)
+      config = Application.get_env(:graph_conn, TestConn)
       assert {:ok, pid} = _start_connection(config)
       assert_receive {:conn_status_changed, :ready}
-      assert :ready = Mock.Conn.status()
+      assert :ready = TestConn.status()
 
-      assert :ok = Mock.Conn.stop()
+      assert :ok = TestConn.stop()
       refute Process.alive?(pid)
     end
 
     test "handles authentication errors" do
-      config = Application.get_env(:graph_conn, Mock.Conn)
+      config = Application.get_env(:graph_conn, TestConn)
 
       credentials =
         config[:auth][:credentials]
@@ -34,17 +35,17 @@ defmodule GraphConnTest do
   describe "execute/2" do
     setup do
       :graph_conn
-      |> Application.get_env(Mock.Conn)
+      |> Application.get_env(TestConn)
       |> _start_connection()
 
       assert_receive {:conn_status_changed, :ready}
-      assert :ready = Mock.Conn.status()
+      assert :ready = TestConn.status()
 
       :ok
     end
 
     test "for unknown api returns error and list of available apis" do
-      assert {:error, {:unknown_api, known_apis}} = Mock.Conn.execute(:unknown_api, %Request{})
+      assert {:error, {:unknown_api, known_apis}} = TestConn.execute(:unknown_api, %Request{})
       assert Enum.member?(known_apis, :action)
     end
 
@@ -53,17 +54,17 @@ defmodule GraphConnTest do
         path: "capabilities"
       }
 
-      assert {:ok, %Response{body: %{}} = response} = Mock.Conn.execute(:action, request)
+      assert {:ok, %Response{body: %{}} = response} = TestConn.execute(:action, request)
     end
 
     test "refreshes token and retries call if token is expired" do
-      true = :ets.insert(Mock.Conn, {:token, "wrong_token"})
+      true = :ets.insert(TestConn, {:token, "wrong_token"})
 
       request = %Request{
         path: "capabilities"
       }
 
-      assert {:ok, %Response{body: %{}} = response} = Mock.Conn.execute(:action, request)
+      assert {:ok, %Response{body: %{}} = response} = TestConn.execute(:action, request)
     end
 
     test "opens ws connection on demand" do
@@ -71,7 +72,7 @@ defmodule GraphConnTest do
         body: %{fake_message: "Hello"}
       }
 
-      assert :ok = Mock.Conn.execute(:"action-ws", request)
+      assert :ok = TestConn.execute(:"action-ws", request)
       assert_receive {:conn_status_changed, :"action-ws", :ready}
 
       assert_receive {:received_message, :"action-ws",
@@ -82,7 +83,7 @@ defmodule GraphConnTest do
                       }}
 
       # uses existing connection
-      assert :ok = Mock.Conn.execute(:"action-ws", request)
+      assert :ok = TestConn.execute(:"action-ws", request)
       refute_receive {:conn_status_changed, :"action-ws", :ready}, 1_000
 
       assert_receive {:received_message, :"action-ws",
@@ -96,7 +97,7 @@ defmodule GraphConnTest do
     test "restarts ws connection when it goes down" do
       # open ws connection
       test_api = :"action-ws"
-      assert :ok = Mock.Conn.execute(test_api, %Request{})
+      assert :ok = TestConn.execute(test_api, %Request{})
 
       assert_receive {:conn_status_changed, test_api, :ready}
 
@@ -109,7 +110,7 @@ defmodule GraphConnTest do
 
       # find :gun conn_pid
       [{_, ws_connection, _, _}] =
-        Mock.Conn.WsConnections
+        TestConn.WsConnections
         |> Process.whereis()
         |> Supervisor.which_children()
 
@@ -126,7 +127,7 @@ defmodule GraphConnTest do
       # make sure that connection is back
       # assert_receive {:conn_status_changed, test_api, :ready}
 
-      assert :ok = Mock.Conn.execute(test_api, %Request{})
+      assert :ok = TestConn.execute(test_api, %Request{})
 
       assert_receive {:received_message, test_api,
                       %{
@@ -138,7 +139,7 @@ defmodule GraphConnTest do
 
     test "ws message is silently resent when connection is dropped" do
       # open ws connection
-      assert :ok = Mock.Conn.execute(:"action-ws", %Request{})
+      assert :ok = TestConn.execute(:"action-ws", %Request{})
 
       assert_receive {:conn_status_changed, :"action-ws", :ready}
 
@@ -151,7 +152,7 @@ defmodule GraphConnTest do
 
       # find and kill :gun conn_pid
       [{_, ws_connection, _, _}] =
-        Mock.Conn.WsConnections
+        TestConn.WsConnections
         |> Process.whereis()
         |> Supervisor.which_children()
 
@@ -164,7 +165,7 @@ defmodule GraphConnTest do
 
       # send message while process is down
       assert capture_log(fn ->
-               :ok = Mock.Conn.execute(:"action-ws", %Request{})
+               :ok = TestConn.execute(:"action-ws", %Request{})
              end) =~ ~r/WS connection is down! Retrying message sending...\n/
 
       assert_receive {:conn_status_changed, :"action-ws", :ready}
@@ -180,7 +181,7 @@ defmodule GraphConnTest do
 
   # it takes some time for pid to die, so we need to retry
   defp _start_connection(config \\ :from_config) do
-    case Mock.Conn.start_supervisor(config, %{forward_to: self()}) do
+    case TestConn.start_supervisor(config, %{forward_to: self()}) do
       {:ok, pid} ->
         assert Process.alive?(pid)
         {:ok, pid}

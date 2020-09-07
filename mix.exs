@@ -4,7 +4,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "0.1.0",
+      version: "1.0.0",
       elixir: "~> 1.9",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
@@ -17,35 +17,29 @@ defmodule GraphConn.MixProject do
         docs: :test,
         bless: :test
       ],
-      dialyzer: [
-        plt_add_apps: [:mix, :certifi]
-      ],
+      # dialyzer: [
+      #  plt_add_deps: :apps_direct,
+      #  plt_add_apps: [:mix, :ex_unit, :gun]
+      # ],
       name: "GraphConn",
       docs: _docs(),
       deps: _deps(),
-      build_path: "../../_build",
-      deps_path: "../../deps",
-      lockfile: "../../mix.lock",
       elixirc_paths: _elixirc_paths(Mix.env())
     ]
   end
 
   def application do
-    # on local machine, when switching between integration and mock tests, you need to `touch mix.exs` first:
-    #  $> touch mix.exs && INTEGRATION_TESTS=true mix test
     [
       extra_applications: [:logger, :ssl, :certifi]
-    ] ++ _application(Mix.env() == :test && System.get_env("INTEGRATION_TESTS") != "true")
+    ]
   end
-
-  defp _application(true), do: [mod: {GraphConn.Mock.Application, []}]
-  defp _application(false), do: []
 
   defp _deps do
     [
       {:elixir_uuid, "~> 1.2"},
       {:machine_gun, "~> 0.1.6"},
-      {:gun, "~> 1.3.1"},
+      # {:gun, "~> 1.3.3"},
+      {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
       {:ssl_verify_fun, "~> 1.1"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only
@@ -54,8 +48,8 @@ defmodule GraphConn.MixProject do
 
       # test dependencies
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.21", runtime: false},
-      {:excoveralls, "~> 0.12", runtime: false},
+      {:ex_doc, "~> 0.21", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.12", only: [:dev, :test], runtime: false},
       {:plug_cowboy, "~> 2.1"}
     ]
   end

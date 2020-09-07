@@ -21,7 +21,7 @@ defmodule GraphConn.MockTest do
 
   describe "applicabilities" do
     test "returns default applicabilities from config" do
-      assert %{"action_handler" => %{}} == Mock.get_applicabilities()
+      assert %{"action_handler" => %{}} = Mock.get_applicabilities()
     end
 
     test "returns default and added applicabilities for action_handler" do
