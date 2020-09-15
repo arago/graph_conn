@@ -132,7 +132,7 @@ defmodule GraphConn.ConnectionManager do
   end
 
   def handle_call(:refresh_token, _, %State{} = state) do
-    {_, %State{} = new_state} = _get_token(state, :refresh_token)
+    {_, %State{} = new_state} = _get_token(state, {:refresh_token, 1_000})
     {:reply, :ok, new_state}
   end
 
@@ -143,18 +143,24 @@ defmodule GraphConn.ConnectionManager do
   end
 
   @impl GenServer
-  def handle_info(:connect, %State{status: status} = state) do
+  def handle_info(:connect, %State{} = state),
+    do: handle_info({:connect, 1_000}, state)
+
+  def handle_info({:connect, retry_in}, %State{status: status} = state) do
     case status do
       {:disconnected, _} -> _get_versions(state)
-      :got_api_versions -> _get_token(state, :connect)
+      :got_api_versions -> _get_token(state, {:connect, retry_in})
       :ready -> {:noreply, state}
     end
   end
 
-  def handle_info(:refresh_token, %State{status: :ready} = state),
-    do: _get_token(state, :refresh_token)
-
   def handle_info(:refresh_token, %State{} = state),
+    do: handle_info({:refresh_token, 1_000}, state)
+
+  def handle_info({:refresh_token, refresh_in}, %State{status: :ready} = state),
+    do: _get_token(state, {:refresh_token, refresh_in})
+
+  def handle_info({:refresh_token, _}, %State{} = state),
     do: {:noreply, state}
 
   def handle_info({:DOWN, _, :process, conn_pid, reason}, %State{} = state) do
@@ -187,29 +193,30 @@ defmodule GraphConn.ConnectionManager do
     {:noreply, state}
   end
 
-  @spec _get_token(State.t(), :connect | :refresh_token) :: {:noreply, State.t()}
-  defp _get_token(%State{} = state, retry_message) do
+  @spec _get_token(State.t(), {:connect | :refresh_token, retry_in_ms :: non_neg_integer()}) ::
+          {:noreply, State.t()}
+  defp _get_token(%State{} = state, {retry_message, retry_in}) do
     [{:config, config}] = :ets.lookup(state.base_name, :config)
     [{:versions, versions}] = :ets.lookup(state.base_name, :versions)
 
-    state =
-      case GraphRestCalls.authenticate(config, versions) do
-        {:ok, %{token: token, expires_at: expires_at}} ->
-          now = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
-          # refresh token when it is said that it will expire
-          refresh_in = expires_at - now
+    case GraphRestCalls.authenticate(config, versions) do
+      {:ok, %{token: token, expires_at: expires_at}} ->
+        now = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
+        # refresh token when it is said that it will expire
+        refresh_in = expires_at - now
 
-          Process.send_after(self(), :refresh_token, refresh_in)
-          _update_ets(state.base_name, :token, token)
-          _status_changed(:ready, state)
-          %State{state | status: :ready}
+        Process.send_after(self(), :refresh_token, refresh_in)
+        _update_ets(state.base_name, :token, token)
+        _status_changed(:ready, state)
+        {:noreply, %State{state | status: :ready}}
 
-        {:error, _error} ->
-          Process.send_after(self(), retry_message, 1_000)
-          state
-      end
+      {:error, :wrong_credentials} ->
+        {:stop, :wrong_credentials, state}
 
-    {:noreply, state}
+      {:error, _error} ->
+        Process.send_after(self(), {retry_message, retry_in * 2}, retry_in)
+        {:noreply, state}
+    end
   end
 
   defp _status_changed(status, %State{status: status}),
