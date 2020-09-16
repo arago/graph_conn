@@ -15,7 +15,8 @@ defmodule GraphConnTest do
       refute Process.alive?(pid)
     end
 
-    test "handles authentication errors" do
+    test "exits on authentication error" do
+      Process.flag(:trap_exit, true)
       config = Application.get_env(:graph_conn, TestConn)
 
       credentials =
@@ -27,8 +28,8 @@ defmodule GraphConnTest do
 
       assert capture_log(fn ->
                assert {:ok, pid} = _start_connection(config)
-               Process.sleep(800)
-             end) =~ ~r/Authentication error/
+               assert_receive {:EXIT, ^pid, :shutdown}
+             end) =~ ~r/\(stop\) \:wrong_credentials/
     end
   end
 

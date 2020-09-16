@@ -106,6 +106,10 @@ defmodule GraphConn.GraphRestCalls do
 
         {:ok, %{token: token, expires_at: expires_at}}
 
+      %MachineGun.Response{status_code: 401} ->
+        Logger.error("401 received")
+        {:error, :wrong_credentials}
+
       %MachineGun.Response{body: body} = response ->
         error =
           case Jason.decode(body) do
