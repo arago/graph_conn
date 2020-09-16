@@ -44,7 +44,7 @@ defmodule GraphConn.MixProject do
       {:jason, "~> 1.1"},
       ## needed for action handlers only
       {:con_cache, "~> 0.14"},
-      {:cowlib, "~> 2.8.0", override: true},
+      {:cowlib, "~> 2.9.1", override: true},
 
       # test dependencies
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
