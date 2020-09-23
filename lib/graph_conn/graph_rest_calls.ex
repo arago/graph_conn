@@ -90,6 +90,11 @@ defmodule GraphConn.GraphRestCalls do
   def authenticate(config, %{auth: %{path: auth_namespace}}) do
     Logger.info("Authenticating...")
 
+    timeout =
+      config
+      |> Keyword.fetch!(:auth)
+      |> Keyword.get(:timeout, 60_000)
+
     body =
       config
       |> Keyword.fetch!(:auth)
@@ -98,7 +103,7 @@ defmodule GraphConn.GraphRestCalls do
       |> Jason.encode!()
 
     %Request{method: :post, path: auth_namespace <> "app", body: body}
-    |> _shoot(config)
+    |> _shoot(config, timeout: timeout)
     |> case do
       %MachineGun.Response{status_code: 200, body: body} ->
         Logger.info("Successfully authenticated.")
@@ -186,7 +191,8 @@ defmodule GraphConn.GraphRestCalls do
     do: %Request{request | headers: Map.put(headers, "Authorization", "Bearer " <> token)}
 
   defp _shoot(%Request{} = request, config, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 5_000)
+    timeout =
+      Keyword.get(opts, :timeout, Keyword.get(config, :timeout, 5_000))
 
     uri = _build_uri(request, config)
 

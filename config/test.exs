@@ -6,13 +6,15 @@ config :ex_unit,
 config :graph_conn, GraphConn.TestConn,
   url: "http://localhost:8081",
   insecure: true,
+  timeout: 30_000,
   auth: [
     credentials: [
       client_id: "action_invoker",
       client_secret: "action_invoker_secret",
       username: "action_invoker_username",
       password: "action_invoker_password"
-    ]
+    ],
+    timeout: 45_000
   ]
 
 config :graph_conn, ActionHandler,

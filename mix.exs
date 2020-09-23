@@ -4,7 +4,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.0.1",
+      version: "1.0.2",
       elixir: "~> 1.9",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
