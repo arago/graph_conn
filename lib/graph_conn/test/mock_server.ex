@@ -65,7 +65,11 @@ defmodule GraphConn.Test.MockServer do
       |> Keyword.put(:url, "http://localhost:#{port}")
       |> Keyword.put(:transport, :tcp)
 
-    auth_config = [credentials: apply(__MODULE__, local_fun_name, [])]
+    auth_config =
+      config
+      |> Keyword.get(:auth, [])
+      |> Keyword.put(:credentials, apply(__MODULE__, local_fun_name, []))
+
     config = Keyword.put(config, :auth, auth_config)
 
     Application.put_env(app, mod, config)
