@@ -312,7 +312,7 @@ defmodule GraphConn.ActionApi.Invoker do
       @spec execute(String.t(), String.t(), String.t(), map(), Keyword.t()) ::
               :ok | {:ok, response :: any()} | {:error, ActionApi.execution_error()}
       def execute(ticket_id, action_handler_id, capability_name, %{} = params, opts \\ []) do
-        Logger.info("Trying to send: #{params["req"]}")
+        Logger.debug("Trying to send: #{params["req"]}")
         ack_timeout = Keyword.get(opts, :ack_timeout, @ack_timeout)
 
         params =
@@ -368,7 +368,7 @@ defmodule GraphConn.ActionApi.Invoker do
            do: {:error, {:ack_timeout, ack_timeout * @number_of_request_retries}}
 
       defp _execute(%ActionApi.Request{id: request_id} = request, ack_timeout, attempt) do
-        Logger.debug("[ActionInvoker] Sending request to server")
+        Logger.info("[ActionInvoker] Sending request to server")
 
         :ok =
           GraphConn.execute(__MODULE__, :"action-ws", %GraphConn.Request{
@@ -379,6 +379,7 @@ defmodule GraphConn.ActionApi.Invoker do
 
         receive do
           {:ack, ^request_id} ->
+            Logger.info("[ActionInvoker] Ack received")
             _wait_for_response(request_id, request.timeout)
 
           {:nack, ^request_id, %{code: 404} = error} ->
@@ -403,7 +404,7 @@ defmodule GraphConn.ActionApi.Invoker do
 
         receive do
           {:response, ^request_id, response} ->
-            Logger.debug("[ActionInvoker] Response received")
+            Logger.info("[ActionInvoker] Response received")
 
             case response do
               %{"error" => error} -> {:error, error}
