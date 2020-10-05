@@ -105,7 +105,7 @@ defmodule GraphConn.WsConnection do
     |> DateTime.diff(state.last_pong)
     |> case do
       diff when diff > reconnect_after ->
-        {:stop, {:error, "Missing pong for more than #{reconnect_after} seconds", state}}
+        {:stop, {:error, "Missing pong for more than #{reconnect_after} seconds"}, state}
 
       _ ->
         Process.send_after(self(), :check_last_pong, 10_000)

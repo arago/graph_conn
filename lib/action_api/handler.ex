@@ -131,6 +131,8 @@ defmodule GraphConn.ActionApi.Handler do
                   {:error, error} -> Jason.encode!(%{error: error})
                 end
 
+              Logger.info("[ActionHandler] Sending result")
+
               %GraphConn.Request{
                 body: %{id: req_id, type: "sendActionResult", result: result}
               }

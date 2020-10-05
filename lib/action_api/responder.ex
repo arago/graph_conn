@@ -56,7 +56,7 @@ defmodule GraphConn.ActionApi.Responder do
           responses
 
         {{_, ref}, new_responses} ->
-          Logger.debug("[ActionHandler.Responder] Response acked", req_id: req_id)
+          Logger.info("[ActionHandler.Responder] Response acked", req_id: req_id)
           Process.cancel_timer(ref)
           new_responses
       end

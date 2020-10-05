@@ -1,3 +1,11 @@
+# 1.0.3
+
+## 1. Enhancements
+  * Improve logging for Action API
+
+## 1. Bug fix
+  * Fix stopping ws connection on missing pongs.
+
 # 1.0.2
 
 ## 1. Enhancements

@@ -191,8 +191,7 @@ defmodule GraphConn.GraphRestCalls do
     do: %Request{request | headers: Map.put(headers, "Authorization", "Bearer " <> token)}
 
   defp _shoot(%Request{} = request, config, opts \\ []) do
-    timeout =
-      Keyword.get(opts, :timeout, Keyword.get(config, :timeout, 5_000))
+    timeout = Keyword.get(opts, :timeout, Keyword.get(config, :timeout, 5_000))
 
     uri = _build_uri(request, config)
 
