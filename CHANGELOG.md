@@ -1,3 +1,8 @@
+# 1.1.0
+
+## 1. Enhancements
+  * Default (local) request registry can be changed with clients (distributed) version
+
 # 1.0.4
 
 ## 1. Enhancements
