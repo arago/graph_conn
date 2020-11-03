@@ -55,7 +55,7 @@ defmodule GraphConnTest do
         path: "capabilities"
       }
 
-      assert {:ok, %Response{body: %{}} = response} = TestConn.execute(:action, request)
+      assert {:ok, %Response{body: %{}}} = TestConn.execute(:action, request)
     end
 
     test "refreshes token and retries call if token is expired" do
@@ -65,7 +65,7 @@ defmodule GraphConnTest do
         path: "capabilities"
       }
 
-      assert {:ok, %Response{body: %{}} = response} = TestConn.execute(:action, request)
+      assert {:ok, %Response{body: %{}}} = TestConn.execute(:action, request)
     end
 
     test "opens ws connection on demand" do
@@ -100,9 +100,9 @@ defmodule GraphConnTest do
       test_api = :"action-ws"
       assert :ok = TestConn.execute(test_api, %Request{})
 
-      assert_receive {:conn_status_changed, test_api, :ready}
+      assert_receive {:conn_status_changed, ^test_api, :ready}
 
-      assert_receive {:received_message, test_api,
+      assert_receive {:received_message, ^test_api,
                       %{
                         "code" => 400,
                         "message" => "invalid action message" <> _,
@@ -130,7 +130,7 @@ defmodule GraphConnTest do
 
       assert :ok = TestConn.execute(test_api, %Request{})
 
-      assert_receive {:received_message, test_api,
+      assert_receive {:received_message, ^test_api,
                       %{
                         "code" => 400,
                         "message" => "invalid action message" <> _,

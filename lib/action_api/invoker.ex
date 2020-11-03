@@ -104,10 +104,16 @@ defmodule GraphConn.ActionApi.Invoker do
       alias GraphConn.ActionApi
       alias GraphConn.ActionApi.Invoker.RequestRegistry
       alias GraphConn.ActionApi.Invoker.State, as: InvokerState
+      alias GraphConn.ActionApi.Invoker.RequestRegistry.Local, as: LocalRequestRegistry
       require Logger
 
       @ack_timeout 3_000
       @number_of_request_retries 3
+      @request_registry Keyword.get(
+                          unquote(opts),
+                          :request_registry,
+                          LocalRequestRegistry
+                        )
 
       defp _get_config do
         unquote(opts)
@@ -121,10 +127,17 @@ defmodule GraphConn.ActionApi.Invoker do
 
       @impl Supervisor
       def init(config) do
-        children = [
-          {RequestRegistry, __MODULE__},
-          {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
-        ]
+        children =
+          if @request_registry == LocalRequestRegistry do
+            [
+              {LocalRequestRegistry, __MODULE__},
+              {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
+            ]
+          else
+            [
+              {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
+            ]
+          end
 
         Supervisor.init(children, strategy: :one_for_all)
       end
@@ -202,18 +215,23 @@ defmodule GraphConn.ActionApi.Invoker do
       @impl GraphConn
       @doc false
       def handle_message(:"action-ws", %{"type" => "acknowledged"} = msg, %InvokerState{}),
-        do: RequestRegistry.ack(__MODULE__, msg["id"])
+        do: RequestRegistry.ack(__MODULE__, msg["id"], @request_registry)
 
       def handle_message(:"action-ws", %{"type" => "negativeAcknowledged"} = msg, %InvokerState{}),
         do:
-          RequestRegistry.nack(__MODULE__, msg["id"], %{
-            code: msg["code"],
-            message: msg["message"]
-          })
+          RequestRegistry.nack(
+            __MODULE__,
+            msg["id"],
+            %{
+              code: msg["code"],
+              message: msg["message"]
+            },
+            @request_registry
+          )
 
       def handle_message(:"action-ws", %{"type" => "sendActionResult"} = msg, %InvokerState{}) do
         result = Jason.decode!(msg["result"])
-        RequestRegistry.respond(__MODULE__, msg["id"], result)
+        RequestRegistry.respond(__MODULE__, msg["id"], result, @request_registry)
 
         Logger.debug("[ActionInvoker] Acking response", req_id: msg["id"])
 
@@ -348,7 +366,7 @@ defmodule GraphConn.ActionApi.Invoker do
           }"
         )
 
-        :ok = RequestRegistry.register(__MODULE__, request_id)
+        :ok = RequestRegistry.register(__MODULE__, request_id, @request_registry)
 
         _execute(request, ack_timeout)
       end

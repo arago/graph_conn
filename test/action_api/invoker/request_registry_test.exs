@@ -3,7 +3,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistryTest do
   alias GraphConn.ActionApi.Invoker.RequestRegistry
 
   setup_all do
-    {:ok, _pid} = RequestRegistry.start_link(__MODULE__)
+    {:ok, _pid} = RequestRegistry.Local.start_link(__MODULE__)
     :ok
   end
 
