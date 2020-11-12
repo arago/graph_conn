@@ -6,6 +6,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistry do
              """
 
   alias GraphConn.ActionApi.Invoker.RequestRegistry.Local, as: LocalRequestRegistry
+  require Logger
 
   def name(base_name),
     do: Module.concat(base_name, RequestRegistry)
@@ -61,14 +62,26 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistry do
   Sends `{:response, request_id, response, ack_response}` messages to
   all process that registered themselves with `request_id`.
   """
-  def respond(base_name, request_id, response, registry \\ LocalRequestRegistry) do
+  def respond(base_name, request_id, response, registry \\ LocalRequestRegistry, attempt \\ 1)
+
+  def respond(_, request_id, _, _, 6),
+    do: Logger.warn("Ignoring received response for unknown request id: #{inspect(request_id)}")
+
+  def respond(base_name, request_id, response, registry, attempt) do
     name = name(base_name)
 
     name
     |> registry.lookup(request_id)
-    |> Enum.each(fn pid -> send(pid, {:response, request_id, response}) end)
+    |> case do
+      nil ->
+        :timer.sleep(1_000)
+        respond(base_name, request_id, response, registry, attempt + 1)
 
-    registry.unregister(name, request_id)
+      pids when is_list(pids) ->
+        Enum.each(pids, fn pid -> send(pid, {:response, request_id, response}) end)
+        registry.unregister(name, request_id)
+    end
+
     :ok
   end
 end
