@@ -54,7 +54,8 @@ defmodule GraphConn.ActionApi.Handler do
            [
              name: _request_cache_name(),
              ttl_check_interval: :timer.minutes(1),
-             global_ttl: :timer.hours(12)
+             global_ttl: :timer.hours(12),
+             acquire_lock_timeout: :timer.minutes(20)
            ]},
           {GraphConn.Supervisor, [__MODULE__, {config, %{}}]},
           {Task.Supervisor, [name: _task_supervisor_name()]},
