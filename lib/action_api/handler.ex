@@ -126,9 +126,16 @@ defmodule GraphConn.ActionApi.Handler do
 
               result =
                 case execute(capability, params) do
-                  :ok -> ""
-                  {:ok, response} -> Jason.encode!(response)
-                  {:error, error} -> Jason.encode!(%{error: error})
+                  :ok ->
+                    ""
+
+                  {:ok, response} ->
+                    response
+                    |> Jason.encode!()
+                    |> _check_payload_size()
+
+                  {:error, error} ->
+                    Jason.encode!(%{error: error})
                 end
 
               Logger.info("[ActionHandler] Sending result")
@@ -147,6 +154,14 @@ defmodule GraphConn.ActionApi.Handler do
       def handle_message(:"action-ws", msg, _) do
         Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
       end
+
+      defp _check_payload_size(response) when byte_size(response) > 1_000_000 do
+        %{error: "Response is exceeding limit of 1MB"}
+        |> Jason.encode!()
+      end
+
+      defp _check_payload_size(response),
+        do: response
 
       @spec default_execution_timeout(String.t()) :: non_neg_integer()
       def default_execution_timeout(_capability),
