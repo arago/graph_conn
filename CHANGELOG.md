@@ -1,3 +1,8 @@
+# 1.1.1
+
+## 1. Bug fix
+  * Action Invoker ignores received response if it can't find request_id in registry 5 times with a second wait time
+
 # 1.1.0
 
 ## 1. Enhancements
