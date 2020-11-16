@@ -136,7 +136,10 @@ defmodule GraphConn.ActionApi.Handler do
                     |> _check_payload_size()
 
                   {:error, error} ->
-                    Jason.encode!(%{error: error})
+                    case Jason.encode(%{error: error}) do
+                      {:ok, json} -> json
+                      _ -> Jason.encode!(%{error: inspect(error)})
+                    end
                 end
 
               Logger.info("[ActionHandler] Sending result")

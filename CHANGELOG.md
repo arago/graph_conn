@@ -1,3 +1,8 @@
+# 1.1.2
+
+## 1. Bug fix
+  * Action Handler will pass on inspected error if error not json encodable
+
 # 1.1.1
 
 ## 1. Bug fix
