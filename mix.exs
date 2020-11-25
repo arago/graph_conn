@@ -42,6 +42,7 @@ defmodule GraphConn.MixProject do
       {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
       {:ssl_verify_fun, "~> 1.1"},
       {:jason, "~> 1.1"},
+      {:prometheus_ex, "~> 3.0"},
       ## needed for action handlers only
       {:con_cache, "~> 0.14"},
       {:cowlib, "~> 2.9.1", override: true},

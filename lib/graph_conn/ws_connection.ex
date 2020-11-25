@@ -2,8 +2,12 @@ defmodule GraphConn.WsConnection do
   @moduledoc false
 
   use GenServer
+  use Prometheus.Metric
   alias GraphConn.{WS, Request}
   require Logger
+
+  @summary [name: :graph_conn_ws_received_bytes, help: "message bytes received over ws", labels: [:module]]
+  @summary [name: :graph_conn_ws_sent_bytes, help: "message bytes sent over ws", labels: [:module]]
 
   defmodule State do
     @moduledoc false
@@ -67,7 +71,9 @@ defmodule GraphConn.WsConnection do
   @impl GenServer
   def handle_cast({:execute, %Request{} = request}, %State{} = state) do
     Logger.debug("[GraphConn.WsConnection] Pushing message to #{state.api}")
-    WS.push(state.conn_pid, Jason.encode!(request.body))
+    msg = Jason.encode!(request.body)
+    Summary.observe([name: :graph_conn_ws_received_bytes, labels: [state.base_name]], byte_size(msg))
+    WS.push(state.conn_pid, msg)
     {:noreply, state}
   end
 
@@ -77,6 +83,7 @@ defmodule GraphConn.WsConnection do
         %State{conn_pid: conn_pid} = state
       ) do
     msg = Jason.decode!(text)
+    Summary.observe([name: :graph_conn_ws_sent_bytes, labels: [state.base_name]], byte_size(msg))
     apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
     {:noreply, state}
   end

@@ -1,3 +1,8 @@
+# 1.1.3
+
+## 1. Enhancements
+  * Gather prometheus metrics
+
 # 1.1.2
 
 ## 1. Bug fix
