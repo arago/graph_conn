@@ -15,6 +15,18 @@ def deps do
 end
 ```
 
+## Telemetry
+
+  Sends telemetry events:
+    * `[:graph_conn, :ws_upgrade], %{time, duration}, %{node, success}`
+    * `[:graph_conn, :ws_down], %{time}, %{node}`
+    * `[:graph_conn, :ws_lost_connection], %{time}, %{node}`
+    * `[:graph_conn, :ws_sent_bytes], %{time, duration, bytes}, %{node}`
+    * `[:graph_conn, :ws_received_bytes], %{time, bytes}, %{node}`
+    * `[:graph_conn, :rest], %{time, duration, bytes_sent, bytes_received}, %{node, path, method, status_code}`
+
+  `time` is in UTC, `success` is boolean, `duration` is in ms, `bytes` is number of bytes sent or recieved.
+
 ## Test
 
 Run `mix test` to run ActionInvoker and ActionHandler tests against local mock server. For tests running through Graph create `config/git_ignored.exs` file and set with correct credentials:

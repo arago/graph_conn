@@ -2,7 +2,7 @@ defmodule GraphConn.WsConnection do
   @moduledoc false
 
   use GenServer
-  alias GraphConn.{WS, Request}
+  alias GraphConn.{WS, Request, Instrumenter}
   require Logger
 
   defmodule State do
@@ -76,7 +76,15 @@ defmodule GraphConn.WsConnection do
         {:gun_ws, conn_pid, _stream_ref, {:text, text}},
         %State{conn_pid: conn_pid} = state
       ) do
+    :ok =
+      Instrumenter.execute(
+        :ws_received_bytes,
+        %{time: DateTime.utc_now(), bytes: byte_size(text)},
+        %{node: Node.self()}
+      )
+
     msg = Jason.decode!(text)
+
     apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
     {:noreply, state}
   end
@@ -105,6 +113,12 @@ defmodule GraphConn.WsConnection do
     |> DateTime.diff(state.last_pong)
     |> case do
       diff when diff > reconnect_after ->
+        Instrumenter.execute(
+          :ws_lost_connection,
+          %{time: DateTime.utc_now()},
+          %{node: Node.self()}
+        )
+
         {:stop, {:error, "Missing pong for more than #{reconnect_after} seconds"}, state}
 
       _ ->
@@ -121,6 +135,13 @@ defmodule GraphConn.WsConnection do
           {:disconnected, :normal}
 
         _ ->
+          :ok =
+            Instrumenter.execute(
+              :ws_down,
+              %{time: DateTime.utc_now()},
+              %{node: Node.self()}
+            )
+
           Logger.warn("WS connection with #{state.api} went down: #{inspect(reason)}")
           {:disconnected, reason}
       end

@@ -4,7 +4,7 @@ defmodule GraphConn.WS do
   # :gun wrapper for making connection, ws_upgrade and pushing ws message.
   # Functions from this module are used in WsConnection only.
 
-  alias GraphConn.{Response, Tools}
+  alias GraphConn.{Response, Tools, Instrumenter}
   require Logger
 
   @doc """
@@ -36,6 +36,8 @@ defmodule GraphConn.WS do
 
   @spec ws_upgrade(pid(), String.t(), String.t(), String.t()) :: :ok | {:error, any()}
   def ws_upgrade(conn_pid, path, subprotocol, token) do
+    mono_start = System.monotonic_time()
+
     stream_ref =
       :gun.ws_upgrade(
         conn_pid,
@@ -47,13 +49,34 @@ defmodule GraphConn.WS do
         }
       )
 
-    _async_response(conn_pid, stream_ref)
+    response = _async_response(conn_pid, stream_ref)
+    success? = response == :ok
+
+    Instrumenter.execute(
+      :ws_upgrade,
+      %{time: DateTime.utc_now(), duration: Instrumenter.duration(mono_start)},
+      %{node: Node.self(), success: success?}
+    )
+
+    response
   end
 
   @spec push(pid(), String.t()) :: :ok
   def push(conn_pid, body) do
     Logger.debug(fn -> "[GraphConn.WS] Pushing #{inspect(body)}" end)
+    mono_start = System.monotonic_time()
     :ok = :gun.ws_send(conn_pid, {:text, body})
+
+    :ok =
+      Instrumenter.execute(
+        :ws_sent_bytes,
+        %{
+          time: DateTime.utc_now(),
+          duration: Instrumenter.duration(mono_start),
+          bytes: byte_size(body)
+        },
+        %{node: Node.self()}
+      )
   end
 
   @spec _async_response(pid(), reference()) :: Response.t() | :ok | {:error, any()}
