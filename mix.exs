@@ -4,7 +4,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.1.1",
+      version: "1.1.3",
       elixir: "~> 1.9",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
@@ -46,6 +46,7 @@ defmodule GraphConn.MixProject do
       {:con_cache, "~> 0.14"},
       {:cowlib, "~> 2.9.1", override: true},
       {:murmur, "~> 1.0"},
+      {:telemetry, "~> 0.4"},
 
       # test dependencies
       {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},

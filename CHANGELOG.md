@@ -1,3 +1,8 @@
+# 1.1.3
+
+## 1. Enhancements
+  * Send WS and REST related telemetry events
+
 # 1.1.2
 
 ## 1. Bug fix

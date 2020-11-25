@@ -1,7 +1,7 @@
 defmodule GraphConn.GraphRestCalls do
   @moduledoc false
 
-  alias GraphConn.{Request, Response}
+  alias GraphConn.{Request, Response, Instrumenter}
   require Logger
 
   @type versions() :: %{atom() => %{path: String.t(), subprotocol: String.t()}}
@@ -208,11 +208,31 @@ defmodule GraphConn.GraphRestCalls do
       "[GraphRestCaller] Sending #{String.upcase(to_string(request.method))}: #{uri}"
     end)
 
+    mono_start = System.monotonic_time()
+
     {_, response} =
       MachineGun.request(request.method, uri, body, headers, %{
         request_timeout: timeout,
         pool_group: :graph_conn
       })
+
+    spawn(fn ->
+      Instrumenter.execute(
+        :rest,
+        %{
+          time: DateTime.utc_now(),
+          duration: Instrumenter.duration(mono_start),
+          bytes_sent: byte_size(body || ""),
+          bytes_received: byte_size(Map.get(response, :body, ""))
+        },
+        %{
+          node: Node.self(),
+          path: request.path,
+          method: request.method,
+          status_code: Map.get(response, :status_code)
+        }
+      )
+    end)
 
     response
   end
