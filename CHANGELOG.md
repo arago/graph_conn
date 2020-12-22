@@ -1,3 +1,8 @@
+# 1.1.4
+
+## 1. Bug fixes
+  * Fix problem with RequestRegistry when ack/nack is received for already processed request.
+
 # 1.1.3
 
 ## 1. Enhancements

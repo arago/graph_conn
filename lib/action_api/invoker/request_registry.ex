@@ -36,6 +36,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistry do
     base_name
     |> name()
     |> registry.lookup(request_id)
+    |> List.wrap()
     |> Enum.each(fn pid -> send(pid, {:ack, request_id}) end)
 
     :ok
@@ -52,6 +53,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistry do
 
     name
     |> registry.lookup(request_id)
+    |> List.wrap()
     |> Enum.each(fn pid -> send(pid, {:nack, request_id, error}) end)
 
     registry.unregister(name, request_id)
