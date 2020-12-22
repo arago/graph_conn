@@ -1,3 +1,8 @@
+# 1.1.5
+
+## 1. Enhancements
+  * Process ws response and prepare request out of Connection process.
+
 # 1.1.4
 
 ## 1. Bug fixes

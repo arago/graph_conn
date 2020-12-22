@@ -66,8 +66,14 @@ defmodule GraphConn.WsConnection do
 
   @impl GenServer
   def handle_cast({:execute, %Request{} = request}, %State{} = state) do
-    Logger.debug("[GraphConn.WsConnection] Pushing message to #{state.api}")
-    WS.push(state.conn_pid, Jason.encode!(request.body))
+    spawn(fn ->
+      Logger.debug(fn ->
+        "[WsConnection] Pushing message to #{state.api}:\n#{inspect(request.body)}"
+      end)
+
+      WS.push(state.conn_pid, Jason.encode!(request.body))
+    end)
+
     {:noreply, state}
   end
 
@@ -76,16 +82,23 @@ defmodule GraphConn.WsConnection do
         {:gun_ws, conn_pid, _stream_ref, {:text, text}},
         %State{conn_pid: conn_pid} = state
       ) do
-    :ok =
-      Instrumenter.execute(
-        :ws_received_bytes,
-        %{time: DateTime.utc_now(), bytes: byte_size(text)},
-        %{node: Node.self()}
-      )
+    spawn(fn ->
+      :ok =
+        Instrumenter.execute(
+          :ws_received_bytes,
+          %{time: DateTime.utc_now(), bytes: byte_size(text)},
+          %{node: Node.self()}
+        )
 
-    msg = Jason.decode!(text)
+      msg = Jason.decode!(text)
 
-    apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
+      Logger.debug(fn ->
+        "[WsConnection] Just received text message on #{state.api}:\n#{inspect(msg)}"
+      end)
+
+      apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
+    end)
+
     {:noreply, state}
   end
 
@@ -150,7 +163,7 @@ defmodule GraphConn.WsConnection do
   end
 
   def handle_info(message, %State{} = state) do
-    Logger.debug("Unexpected message: #{inspect(message)} on state: #{inspect(state)}")
+    Logger.debug(fn -> "Unexpected message: #{inspect(message)} on state: #{inspect(state)}" end)
     {:noreply, state}
   end
 
