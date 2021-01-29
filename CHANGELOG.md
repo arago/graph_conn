@@ -1,3 +1,8 @@
+# 1.2.0
+
+## 1. Bug fix
+  * Make request_id for action api deterministic.
+
 # 1.1.5
 
 ## 1. Enhancements
