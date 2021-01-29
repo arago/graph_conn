@@ -47,12 +47,8 @@ defmodule GraphConn.ActionApi.Request do
           params: map()
         }) :: String.t()
   defp _calculate_id(payload) do
-    context_id =
-      "#{payload.handler}#{payload.capability}#{inspect(payload.params)}"
-      |> Murmur.hash_x64_128()
-      |> to_string
-
-    "#{payload.ticket_id}#{context_id}"
-    |> Base.encode64()
+    "#{payload.ticket_id}#{payload.handler}#{payload.capability}#{inspect(payload.params)}"
+    |> Murmur.hash_x64_128()
+    |> to_string()
   end
 end
