@@ -4,7 +4,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.2.0",
+      version: "1.3.0",
       elixir: "~> 1.9",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
@@ -43,7 +43,7 @@ defmodule GraphConn.MixProject do
       {:ssl_verify_fun, "~> 1.1"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only
-      {:con_cache, "~> 0.14"},
+      {:cachex, "~> 3.3"},
       {:cowlib, "~> 2.9.1", override: true},
       {:murmur, "~> 1.0"},
       {:telemetry, "~> 0.4"},

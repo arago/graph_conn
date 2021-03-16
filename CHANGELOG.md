@@ -1,3 +1,8 @@
+# 1.3.0
+
+## 1. Enhancements
+  * Replace con_cache with cachex.
+
 # 1.2.0
 
 ## 1. Bug fix

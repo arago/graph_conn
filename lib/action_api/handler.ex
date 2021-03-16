@@ -15,6 +15,7 @@ defmodule GraphConn.ActionApi.Handler do
       @behaviour GraphConn.ActionApi.Handler
       alias GraphConn.ActionApi
       require Logger
+      require Cachex.Spec
 
       defp _get_config do
         unquote(opts)
@@ -50,12 +51,16 @@ defmodule GraphConn.ActionApi.Handler do
       @impl Supervisor
       def init(config) do
         children = [
-          {ConCache,
+          {Cachex,
            [
              name: _request_cache_name(),
-             ttl_check_interval: :timer.minutes(1),
-             global_ttl: :timer.hours(12),
-             acquire_lock_timeout: :timer.minutes(20)
+             expiration:
+               Cachex.Spec.expiration(
+                 # default record expiration
+                 default: :timer.minutes(60),
+                 # how often cleanup should occur
+                 interval: :timer.seconds(60)
+               )
            ]},
           {GraphConn.Supervisor, [__MODULE__, {config, %{}}]},
           {Task.Supervisor, [name: _task_supervisor_name()]},
@@ -119,36 +124,27 @@ defmodule GraphConn.ActionApi.Handler do
             body: %{id: req_id, type: "acknowledged", code: 200, message: ""}
           })
 
-          _request_cache_name()
-          |> ConCache.get_or_store(
-            req_id,
-            fn ->
-              Logger.info("[ActionHandler] Executing #{inspect(capability)}: #{inspect(params)}")
+          {:ok, response} =
+            _request_cache_name()
+            |> Cachex.transaction([req_id], fn worker ->
+              worker
+              |> Cachex.get(req_id)
+              |> case do
+                {:ok, nil} ->
+                  response = _execute_action(capability, params)
+                  Cachex.put(worker, req_id, response)
+                  response
 
-              result =
-                case execute(capability, params) do
-                  :ok ->
-                    ""
+                {:ok, response} ->
+                  response
+              end
+            end)
 
-                  {:ok, response} ->
-                    response
-                    |> Jason.encode!()
-                    |> _check_payload_size()
+          Logger.info("[ActionHandler] Sending result")
 
-                  {:error, error} ->
-                    case Jason.encode(%{error: error}) do
-                      {:ok, json} -> json
-                      _ -> Jason.encode!(%{error: inspect(error)})
-                    end
-                end
-
-              Logger.info("[ActionHandler] Sending result")
-
-              %GraphConn.Request{
-                body: %{id: req_id, type: "sendActionResult", result: result}
-              }
-            end
-          )
+          %GraphConn.Request{
+            body: %{id: req_id, type: "sendActionResult", result: response}
+          }
           |> ActionApi.Responder.return_response(__MODULE__, resend_response_timeout())
         end
 
@@ -157,6 +153,28 @@ defmodule GraphConn.ActionApi.Handler do
 
       def handle_message(:"action-ws", msg, _) do
         Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
+      end
+
+      defp _execute_action(capability, params) do
+        Logger.info("[ActionHandler] Executing #{inspect(capability)}: #{inspect(params)}")
+
+        capability
+        |> execute(params)
+        |> case do
+          :ok ->
+            ""
+
+          {:ok, response} ->
+            response
+            |> Jason.encode!()
+            |> _check_payload_size()
+
+          {:error, error} ->
+            case Jason.encode(%{error: error}) do
+              {:ok, json} -> json
+              _ -> Jason.encode!(%{error: inspect(error)})
+            end
+        end
       end
 
       defp _check_payload_size(response) when byte_size(response) > 1_000_000 do
