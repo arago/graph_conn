@@ -1,3 +1,8 @@
+# 1.3.1
+
+## 1. Enhancements
+  * Update dependencies for later erlang compatibility
+
 # 1.3.0
 
 ## 1. Enhancements
