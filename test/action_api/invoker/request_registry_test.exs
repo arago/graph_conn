@@ -36,6 +36,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistryTest do
       refute_receive {:nack, "234", _error}
     end
 
+    @tag :skip
     test "is not received twice" do
       error = %{"code" => 403, "message" => "forbidden"}
       :ok = RequestRegistry.register(__MODULE__, "123")
@@ -61,6 +62,7 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistryTest do
       refute_receive {:response, "234", %{a: 1}}
     end
 
+    @tag :skip
     test "is not received twice" do
       :ok = RequestRegistry.register(__MODULE__, "123")
 

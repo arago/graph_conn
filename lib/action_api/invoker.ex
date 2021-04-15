@@ -28,7 +28,7 @@ defmodule GraphConn.ActionApi.Invoker do
       {ActionInvoker, nil},
       # ... other children
     ]
-    
+
     opts = [strategy: :one_for_one]
     Supervisor.start_link(children, opts)
   end
@@ -366,9 +366,13 @@ defmodule GraphConn.ActionApi.Invoker do
           }"
         )
 
-        :ok = RequestRegistry.register(__MODULE__, request_id, @request_registry)
+        try do
+          :ok = RequestRegistry.register(__MODULE__, request_id, @request_registry)
 
-        _execute(request, ack_timeout)
+          _execute(request, ack_timeout)
+        after
+          RequestRegistry.unregister(__MODULE__, request_id, @request_registry)
+        end
       end
 
       defp _inject_defaults(params, capability_name) do
