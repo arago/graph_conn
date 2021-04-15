@@ -1,3 +1,8 @@
+# 1.3.2
+
+## 1. Bug fix
+  * Processes will now unregister themself after execution
+
 # 1.3.1
 
 ## 1. Enhancements
