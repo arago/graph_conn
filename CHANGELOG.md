@@ -1,3 +1,8 @@
+# 1.4.0
+
+## 1. Bug fix
+  * Action executions are not performed inside Cachex process
+
 # 1.3.2
 
 ## 1. Bug fix
