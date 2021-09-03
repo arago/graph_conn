@@ -114,45 +114,91 @@ defmodule GraphConn.ActionApi.Handler do
             } = msg,
             _
           ) do
+        Logger.debug("[ActionHandler] Received message: #{inspect(msg)}")
+
+        task_fun = _task(req_id, capability, params)
+
         execution_timeout = msg["timeout"] || default_execution_timeout(capability)
 
-        task = fn ->
+        Task.Supervisor.start_child(_task_supervisor_name(), task_fun, shutdown: execution_timeout)
+      end
+
+      def handle_message(:"action-ws", msg, _) do
+        Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
+      end
+
+      defp _task(req_id, capability, params) do
+        fn ->
           Logger.metadata(req_id: req_id)
-          Logger.debug("[ActionHandler] Received message: #{inspect(msg)}")
 
           GraphConn.execute(__MODULE__, :"action-ws", %GraphConn.Request{
             body: %{id: req_id, type: "acknowledged", code: 200, message: ""}
           })
 
-          {:ok, response} =
-            _request_cache_name()
-            |> Cachex.transaction([req_id], fn worker ->
-              worker
-              |> Cachex.get(req_id)
-              |> case do
-                {:ok, nil} ->
-                  response = _execute_action(capability, params)
-                  Cachex.put(worker, req_id, response)
-                  response
+          task_pid = self()
 
-                {:ok, response} ->
-                  response
-              end
-            end)
+          _request_cache_name()
+          |> Cachex.transaction([req_id], fn worker ->
+            worker
+            |> Cachex.get(req_id)
+            |> case do
+              {:ok, nil} ->
+                Cachex.put(worker, req_id, {:in_progress, []})
+                :execute_action
 
-          Logger.info("[ActionHandler] Sending result")
+              {:ok, {:in_progress, waiting_tasks}} ->
+                Cachex.put(worker, req_id, {:in_progress, [task_pid | waiting_tasks]})
+                :wait
 
-          %GraphConn.Request{
-            body: %{id: req_id, type: "sendActionResult", result: response}
-          }
-          |> ActionApi.Responder.return_response(__MODULE__, resend_response_timeout())
+              {:ok, response} ->
+                response
+            end
+          end)
+          |> case do
+            {:ok, :execute_action} ->
+              response = _execute_action(capability, params)
+              _set_response(req_id, response)
+
+            {:ok, :wait} ->
+              Logger.info("The same request is already processing. Wait for the response...")
+              _wait_for_response(req_id)
+
+            {:ok, response} ->
+              Logger.info("Cache hit. Returning cached response...")
+              _respond_with(req_id, response)
+          end
         end
-
-        Task.Supervisor.start_child(_task_supervisor_name(), task, shutdown: execution_timeout)
       end
 
-      def handle_message(:"action-ws", msg, _) do
-        Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
+      defp _set_response(req_id, response) do
+        {:ok, other_waiting_tasks} =
+          _request_cache_name()
+          |> Cachex.transaction([req_id], fn worker ->
+            {:ok, {:in_progress, other_waiting_tasks}} = Cachex.get(worker, req_id)
+            Cachex.put(worker, req_id, response)
+            other_waiting_tasks
+          end)
+
+        _respond_with(req_id, response)
+
+        for task <- other_waiting_tasks,
+            do: send(task, {:response, req_id, response})
+      end
+
+      defp _wait_for_response(req_id) do
+        receive do
+          {:response, ^req_id, response} ->
+            _respond_with(req_id, response)
+        end
+      end
+
+      defp _respond_with(req_id, response) do
+        Logger.info("[ActionHandler] Sending result")
+
+        %GraphConn.Request{
+          body: %{id: req_id, type: "sendActionResult", result: response}
+        }
+        |> ActionApi.Responder.return_response(__MODULE__, resend_response_timeout())
       end
 
       defp _execute_action(capability, params) do
