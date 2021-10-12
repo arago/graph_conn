@@ -6,6 +6,10 @@ defmodule TestActionHandler do
   use GraphConn.ActionApi.Handler
   alias GraphConn.ActionApi.Handler.Echo
 
+  @impl GraphConn.ActionApi.Handler
+  def execute("MakeDialyzerPass for `:ok` response", _),
+    do: :ok
+
   def execute("ExecuteCommand", %{"other_handler" => "Echo"} = params),
     do: Echo.execute(params)
 

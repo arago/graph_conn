@@ -7,9 +7,11 @@ defmodule GraphConn.ActionApi.Handler do
 
   @callback default_execution_timeout(String.t()) :: non_neg_integer()
   @callback resend_response_timeout() :: non_neg_integer()
+  @callback execute(capability :: String.t(), params :: %{String.t() => any}) ::
+              :ok | {:ok, term()} | {:error, term()}
 
   defmacro __using__(opts \\ []) do
-    quote do
+    quote location: :keep do
       use Supervisor
       @behaviour GraphConn
       @behaviour GraphConn.ActionApi.Handler
@@ -231,11 +233,9 @@ defmodule GraphConn.ActionApi.Handler do
       defp _check_payload_size(response),
         do: response
 
-      @spec default_execution_timeout(String.t()) :: non_neg_integer()
       def default_execution_timeout(_capability),
         do: 60_000
 
-      @spec resend_response_timeout() :: non_neg_integer()
       def resend_response_timeout,
         do: 3_000
 

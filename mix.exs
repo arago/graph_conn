@@ -4,8 +4,8 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.4.0",
-      elixir: "~> 1.9",
+      version: "1.4.1",
+      elixir: "~> 1.10",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
@@ -17,10 +17,10 @@ defmodule GraphConn.MixProject do
         docs: :test,
         bless: :test
       ],
-      # dialyzer: [
-      #  plt_add_deps: :apps_direct,
-      #  plt_add_apps: [:mix, :ex_unit, :gun]
-      # ],
+      dialyzer: [
+        plt_add_deps: :apps_direct,
+        plt_add_apps: [:mix, :plug, :cowboy, :jason, :machine_gun]
+      ],
       name: "GraphConn",
       docs: _docs(),
       deps: _deps(),
@@ -44,12 +44,12 @@ defmodule GraphConn.MixProject do
       {:jason, "~> 1.1"},
       ## needed for action handlers only
       {:cachex, "~> 3.3"},
-      {:cowlib, "~> 2.9.1", override: true},
+      {:cowlib, "~> 2.9", override: true},
       {:murmur, "~> 1.0"},
-      {:telemetry, "~> 0.4"},
+      {:telemetry, "~> 0.4 or ~> 1.0.0"},
 
       # test dependencies
-      {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.21", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.12", only: [:dev, :test], runtime: false},
       {:plug_cowboy, "~> 2.1"}

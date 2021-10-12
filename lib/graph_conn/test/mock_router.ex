@@ -236,9 +236,7 @@ defmodule GraphConn.Test.MockRouter do
       "error" => %{
         "code" => 400,
         "message" =>
-          "Bad Request : {\"error_description\":\"Authentication failed for #{
-            conn.params["username"]
-          }\",\"error\":\"invalid_grant\"}"
+          "Bad Request : {\"error_description\":\"Authentication failed for #{conn.params["username"]}\",\"error\":\"invalid_grant\"}"
       }
     }
 

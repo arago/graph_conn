@@ -9,13 +9,13 @@ env:
   MIX_ENV: test
 
 jobs:
-  graph_conn:
-    name: Build and test
+  graph_conn-elixir12:
+    name: Full check for Elixir 1.12
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        elixir: ['1.9.4', '1.10.4', '1.11.3']
-        erlang: ['22.3', '23.2']
+        elixir: ['1.12.3']
+        erlang: ['22.3', '23.3', '24.1']
 
     steps:
     - uses: actions/checkout@v2
@@ -28,19 +28,49 @@ jobs:
       uses: actions/cache@v2
       with:
         path: deps
-        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}
-        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}
+        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}-1
+        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}-1
     - name: Install dependencies
       run: mix deps.get
     - name: Restore builds cache
       uses: actions/cache@v2
       with:
         path: _build/test
-        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}
-        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}
-    - name: Check warnings
-      run: mix compile --warnings-as-errors --force
-    - name: Check formatting
-      run: mix format --check-formatted
+        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}-1
+        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}-1
+    - name: Check warnings, formatting, tests and dialyzer
+      run: mix bless
+
+  graph_conn-elixir11:
+    name: Tests and typespec for Elixir < 1.12
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: ['1.10.4', '1.11.4']
+        erlang: ['22.3', '23.3']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Elixir
+      uses: erlef/setup-elixir@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.erlang }}
+    - name: Restore dependencies cache
+      uses: actions/cache@v2
+      with:
+        path: deps
+        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}-1
+        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-deps-${{ hashFiles('mix.lock') }}-1
+    - name: Install dependencies
+      run: mix deps.get
+    - name: Restore builds cache
+      uses: actions/cache@v2
+      with:
+        path: _build/test
+        key: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}-1
+        restore-keys: ${{ matrix.erlang }}-${{ matrix.elixir }}-build_test--${{ hashFiles('mix.lock') }}-1
     - name: Run tests
       run: mix coveralls.html
+    - name: Run dialyzer
+      run: mix dialyzer

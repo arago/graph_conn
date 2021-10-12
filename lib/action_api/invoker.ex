@@ -98,7 +98,7 @@ defmodule GraphConn.ActionApi.Invoker do
 
   @doc false
   defmacro __using__(opts \\ []) do
-    quote do
+    quote location: :keep do
       use Supervisor
       @behaviour GraphConn
       alias GraphConn.ActionApi
@@ -115,6 +115,25 @@ defmodule GraphConn.ActionApi.Invoker do
                           LocalRequestRegistry
                         )
 
+      if @request_registry == LocalRequestRegistry do
+        @impl Supervisor
+        def init(config) do
+          [
+            {LocalRequestRegistry, __MODULE__},
+            {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
+          ]
+          |> Supervisor.init(strategy: :one_for_all)
+        end
+      else
+        @impl Supervisor
+        def init(config) do
+          [
+            {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
+          ]
+          |> Supervisor.init(strategy: :one_for_all)
+        end
+      end
+
       defp _get_config do
         unquote(opts)
         |> Keyword.get(:otp_app, :graph_conn)
@@ -123,23 +142,6 @@ defmodule GraphConn.ActionApi.Invoker do
 
       def start_link(config \\ nil) do
         Supervisor.start_link(__MODULE__, config || _get_config(), name: __MODULE__)
-      end
-
-      @impl Supervisor
-      def init(config) do
-        children =
-          if @request_registry == LocalRequestRegistry do
-            [
-              {LocalRequestRegistry, __MODULE__},
-              {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
-            ]
-          else
-            [
-              {GraphConn.Supervisor, [__MODULE__, {config, %InvokerState{}}]}
-            ]
-          end
-
-        Supervisor.init(children, strategy: :one_for_all)
       end
 
       @doc """
@@ -186,9 +188,7 @@ defmodule GraphConn.ActionApi.Invoker do
 
       def on_status_change(new_status, %InvokerState{status: current_status} = state) do
         Logger.debug(
-          "[ActionInvoker] Unhandled ActionAPI status change from #{current_status} to #{
-            new_status
-          }"
+          "[ActionInvoker] Unhandled ActionAPI status change from #{current_status} to #{new_status}"
         )
       end
 
@@ -206,9 +206,7 @@ defmodule GraphConn.ActionApi.Invoker do
             %InvokerState{status: current_status} = state
           ) do
         Logger.debug(
-          "[ActionInvoker] Unhandled Action WS connection status change from #{current_status} to #{
-            inspect(new_status)
-          }"
+          "[ActionInvoker] Unhandled Action WS connection status change from #{current_status} to #{inspect(new_status)}"
         )
       end
 
@@ -256,7 +254,7 @@ defmodule GraphConn.ActionApi.Invoker do
       Returns capabilities that are available for this client
       """
       @spec available_capabilities ::
-              {:ok, [ActionApi.Capability.t()]}
+              %{(capability :: String.t()) => map()}
               | {:error, {:connection_not_ready, ActionApi.execution_error()}}
       def available_capabilities,
         do: _state_of(fn state -> state.capabilities end)
@@ -265,13 +263,14 @@ defmodule GraphConn.ActionApi.Invoker do
       Returns applicabilities that are available for this client
       """
       @spec available_applicabilities ::
-              {:ok, [ActionApi.Applicabilities.t()]}
+              %{(handler_name :: String.t()) => map()}
               | {:error, {:connection_not_ready, ActionApi.execution_error()}}
       def available_applicabilities,
         do: _state_of(fn state -> state.applicabilities end)
 
       @spec _state_of((State.t() -> response :: any())) ::
-              {:ok, response :: any()}
+              response ::
+              %{String.t() => map()}
               | {:error, {:connection_not_ready, ActionApi.execution_error()}}
       defp _state_of(fun) do
         with_state(fn
@@ -290,15 +289,20 @@ defmodule GraphConn.ActionApi.Invoker do
       """
       @spec capability_defaults(String.t()) :: %{String.t() => any()}
       def capability_defaults(capability_name) do
-        empty_capability = %{"mandatoryParameters" => %{}, "optionalParameters" => %{}}
+        case available_capabilities() do
+          %{} = capabilities ->
+            empty_capability = %{"mandatoryParameters" => %{}, "optionalParameters" => %{}}
+            capability = Map.get(capabilities, capability_name, empty_capability)
 
-        capability = Map.get(available_capabilities(), capability_name, empty_capability)
+            for {field, %{"default" => value}} <-
+                  Map.merge(capability["mandatoryParameters"], capability["optionalParameters"]) do
+              {field, value}
+            end
+            |> Enum.into(%{})
 
-        for {field, %{"default" => value}} <-
-              Map.merge(capability["mandatoryParameters"], capability["optionalParameters"]) do
-          {field, value}
+          {:error, {:connection_not_ready, _}} ->
+            %{}
         end
-        |> Enum.into(%{})
       end
 
       def reconfigure do
@@ -361,9 +365,7 @@ defmodule GraphConn.ActionApi.Invoker do
         Logger.metadata(req_id: request_id)
 
         Logger.info(
-          "[ActionInvoker] Executing #{capability_name} on #{action_handler_id} with params #{
-            inspect(params)
-          }"
+          "[ActionInvoker] Executing #{capability_name} on #{action_handler_id} with params #{inspect(params)}"
         )
 
         try do

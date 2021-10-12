@@ -1,3 +1,8 @@
+# 1.4.1
+
+## 1. Enhancements
+  * Update all deps and fix dialyzer errors
+
 # 1.4.0
 
 ## 1. Bug fix
