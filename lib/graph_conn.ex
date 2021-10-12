@@ -211,7 +211,7 @@ defmodule GraphConn do
   This callback is invoked when there's a new `message` received from Graph server's
   `from_api`.
   """
-  @callback handle_message(from_api :: atom(), message :: term(), opts :: Keyword.t()) ::
+  @callback handle_message(from_api :: atom(), message :: term(), internal_state :: any()) ::
               :ok | {:ok, response :: term()} | {:error, any()}
 
   @optional_callbacks on_status_change: 2, on_status_change: 3, handle_message: 3

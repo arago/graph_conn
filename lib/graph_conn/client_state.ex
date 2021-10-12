@@ -1,7 +1,7 @@
 defmodule GraphConn.ClientState do
-  @moduledoc !"""
-             Keeps state of client conn module.
-             """
+  @moduledoc """
+  Keeps state of client conn module.
+  """
 
   use GenServer
 

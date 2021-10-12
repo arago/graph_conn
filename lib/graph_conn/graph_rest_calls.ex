@@ -1,10 +1,21 @@
 defmodule GraphConn.GraphRestCalls do
-  @moduledoc false
-
   alias GraphConn.{Request, Response, Instrumenter}
   require Logger
 
   @type versions() :: %{atom() => %{path: String.t(), subprotocol: String.t()}}
+
+  @type machine_gun_response() :: %MachineGun.Response{
+          request_url: String.t(),
+          status_code: pos_integer(),
+          headers: Keyword.t(),
+          body: String.t(),
+          trailers: any()
+        }
+
+  @type machine_gun_error() :: %MachineGun.Error{
+          __exception__: any(),
+          reason: String.t()
+        }
 
   @doc """
   Returns map of API versions connected Graph server supports,
@@ -85,7 +96,7 @@ defmodule GraphConn.GraphRestCalls do
 
   - `expires_at` in response is unix time in milliseconds.
   """
-  @spec authenticate(Keyword.t(), %{auth: %{path: String.t()}}) ::
+  @spec authenticate(Keyword.t(), %{atom() => %{atom() => String.t()}}) ::
           {:ok, %{token: String.t(), expires_at: pos_integer()}} | {:error, any()}
   def authenticate(config, %{auth: %{path: auth_namespace}}) do
     Logger.info("Authenticating...")
@@ -131,6 +142,12 @@ defmodule GraphConn.GraphRestCalls do
     end
   end
 
+  def authenticate(_config, apis) do
+    {:error, "missing :api with :path in #{inspect(apis)}"}
+  end
+
+  @spec execute(module(), atom(), Request.t(), Keyword.t()) ::
+          {:ok, Response.t()} | machine_gun_error() | {:error, {:unknown_api, [any()]}}
   def execute(base_name, target_api, request, opts \\ []) do
     with {:ok, %{path: namespace}} <- _get_version(base_name, target_api) do
       [{:config, config}] = :ets.lookup(base_name, :config)
@@ -148,6 +165,8 @@ defmodule GraphConn.GraphRestCalls do
     end
   end
 
+  @spec _execute(Request.t(), Keyword.t(), Keyword.t(), pos_integer()) ::
+          {:ok, Response.t()} | machine_gun_error()
   defp _execute(request, config, opts, attempt \\ 1) do
     response =
       request
@@ -199,7 +218,7 @@ defmodule GraphConn.GraphRestCalls do
       case request.body do
         %{} -> Jason.encode!(request.body)
         nil -> ""
-        _ -> request.body
+        body when is_binary(body) -> body
       end
 
     headers = _convert_headers(request.headers, body)
@@ -211,7 +230,10 @@ defmodule GraphConn.GraphRestCalls do
     mono_start = System.monotonic_time()
 
     {_, response} =
-      MachineGun.request(request.method, uri, body, headers, %{
+      request.method
+      |> to_string()
+      |> String.upcase()
+      |> MachineGun.request(uri, body, headers, %{
         request_timeout: timeout,
         pool_group: :graph_conn
       })
@@ -222,7 +244,7 @@ defmodule GraphConn.GraphRestCalls do
         %{
           time: DateTime.utc_now(),
           duration: Instrumenter.duration(mono_start),
-          bytes_sent: byte_size(body || ""),
+          bytes_sent: byte_size(body),
           bytes_received: byte_size(Map.get(response, :body, ""))
         },
         %{
@@ -242,7 +264,7 @@ defmodule GraphConn.GraphRestCalls do
     "#{transport}://#{config[:host]}:#{config[:port]}#{path}?#{URI.encode_query(query)}"
   end
 
-  @spec _convert_headers(map(), nil | String.t()) :: [{String.t(), charlist()}]
+  @spec _convert_headers(map(), String.t()) :: [{String.t(), charlist()}]
   defp _convert_headers(headers, body) do
     json = 'application/json'
 
@@ -253,13 +275,15 @@ defmodule GraphConn.GraphRestCalls do
         {key, val}
       end)
 
-    if body && byte_size(body) > 0 do
+    if byte_size(body) > 0 do
       [{"accept", json}, {"content-type", json}, {"content-length", byte_size(body)} | headers]
     else
       [{"accept", json} | headers]
     end
   end
 
+  @spec _process_response(machine_gun_response() | machine_gun_error()) ::
+          {:ok, Response.t()} | {:retry, machine_gun_error()}
   defp _process_response(%MachineGun.Response{body: body} = response) do
     machine_gun_resp =
       case Jason.decode(body) do

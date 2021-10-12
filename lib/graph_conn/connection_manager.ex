@@ -1,6 +1,4 @@
 defmodule GraphConn.ConnectionManager do
-  @moduledoc false
-
   defmodule State do
     @moduledoc false
 
@@ -20,7 +18,12 @@ defmodule GraphConn.ConnectionManager do
 
   @typep version() :: %{path: String.t(), protocol: String.t(), subprotocol: String.t()}
 
-  @in_test? Mix.env() == :test
+  # we need public access to the table so we can change token from test process.
+  if Mix.env() == :test do
+    def _ets_opts(opts), do: [:public | opts]
+  else
+    def _ets_opts(opts), do: opts
+  end
 
   defp _name(base_name),
     do: Module.concat(base_name, ConnectionManager)
@@ -44,7 +47,11 @@ defmodule GraphConn.ConnectionManager do
     |> GenServer.call(:status)
   end
 
-  @spec execute(atom(), atom(), Request.t(), Keyword.t()) :: Response.t()
+  @spec execute(atom(), atom(), Request.t(), Keyword.t()) ::
+          :ok
+          | {:error, {:unknown_api, [any()]}}
+          | {:ok, Response.t()}
+          | GraphRestCalls.machine_gun_error()
   def execute(base_name, target_api, %Request{} = request, opts \\ []) do
     case _get_version(base_name, target_api) do
       {:ok, %{protocol: ""}} -> _execute_rest(base_name, target_api, request, opts)
@@ -273,9 +280,7 @@ defmodule GraphConn.ConnectionManager do
   defp _init_ets(base_name, config) do
     opts = [:named_table, read_concurrency: true]
 
-    # we need public access to the table so we can change token from test process.
-    opts = if @in_test?, do: [:public | opts], else: opts
-    ^base_name = :ets.new(base_name, opts)
+    ^base_name = :ets.new(base_name, _ets_opts(opts))
 
     config = parse_urls(config)
     _reset_ets(base_name, config)
