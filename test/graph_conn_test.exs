@@ -1,5 +1,5 @@
 defmodule GraphConnTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias GraphConn.{Request, Response}
   alias GraphConn.TestConn
   import ExUnit.CaptureLog

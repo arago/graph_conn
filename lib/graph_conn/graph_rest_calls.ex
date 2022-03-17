@@ -1,21 +1,8 @@
 defmodule GraphConn.GraphRestCalls do
-  alias GraphConn.{Request, Response, Instrumenter}
+  alias GraphConn.{Request, Response, ResponseError, Instrumenter}
   require Logger
 
   @type versions() :: %{atom() => %{path: String.t(), subprotocol: String.t()}}
-
-  @type machine_gun_response() :: %MachineGun.Response{
-          request_url: String.t(),
-          status_code: pos_integer(),
-          headers: Keyword.t(),
-          body: String.t(),
-          trailers: any()
-        }
-
-  @type machine_gun_error() :: %MachineGun.Error{
-          __exception__: any(),
-          reason: String.t()
-        }
 
   @doc """
   Returns map of API versions connected Graph server supports,
@@ -55,26 +42,26 @@ defmodule GraphConn.GraphRestCalls do
          variables: %{path: "/api/6/variables/", protocol: "", subprotocol: "6"}
        }}
   """
-  @spec get_versions(Keyword.t()) :: {:ok, versions()} | {:error, any()}
-  def get_versions(config) do
+  @spec get_versions(module(), Keyword.t()) :: {:ok, versions()} | {:error, any()}
+  def get_versions(base_name, config) do
     Logger.info("Getting supported Graph API versions...")
 
     request = %Request{path: "/api/version"}
 
-    with {:ok, graph_versions} <- _get_versions(request, config),
-         {:ok, auth_versions} <- _get_versions(request, config[:auth]) do
+    with {:ok, graph_versions} <- _get_versions(request, base_name, config),
+         {:ok, auth_versions} <- _get_versions(request, base_name, config[:auth]) do
       auth_versions = Map.take(auth_versions, [:auth])
 
       {:ok, Map.merge(graph_versions, auth_versions)}
     end
   end
 
-  @spec _get_versions(Request.t(), Keyword.t()) :: {:ok, versions()} | {:error, any()}
-  defp _get_versions(%Request{} = request, config) do
+  @spec _get_versions(Request.t(), module(), Keyword.t()) :: {:ok, versions()} | {:error, any()}
+  defp _get_versions(%Request{} = request, base_name, config) do
     request
-    |> _shoot(config)
+    |> _shoot(base_name, config)
     |> case do
-      %MachineGun.Response{status_code: 200, body: body} ->
+      %Finch.Response{status: 200, body: body} ->
         versions =
           body
           |> Jason.decode!()
@@ -96,9 +83,9 @@ defmodule GraphConn.GraphRestCalls do
 
   - `expires_at` in response is unix time in milliseconds.
   """
-  @spec authenticate(Keyword.t(), %{atom() => %{atom() => String.t()}}) ::
+  @spec authenticate(module(), Keyword.t(), %{atom() => %{atom() => String.t()}}) ::
           {:ok, %{token: String.t(), expires_at: pos_integer()}} | {:error, any()}
-  def authenticate(config, %{auth: %{path: auth_namespace}}) do
+  def authenticate(base_bame, config, %{auth: %{path: auth_namespace}}) do
     Logger.info("Authenticating...")
 
     timeout =
@@ -114,19 +101,19 @@ defmodule GraphConn.GraphRestCalls do
       |> Jason.encode!()
 
     %Request{method: :post, path: auth_namespace <> "app", body: body}
-    |> _shoot(config, timeout: timeout)
+    |> _shoot(base_bame, config, timeout: timeout)
     |> case do
-      %MachineGun.Response{status_code: 200, body: body} ->
+      %Finch.Response{status: 200, body: body} ->
         Logger.info("Successfully authenticated.")
         %{"_TOKEN" => token, "expires-at" => expires_at} = Jason.decode!(body)
 
         {:ok, %{token: token, expires_at: expires_at}}
 
-      %MachineGun.Response{status_code: 401} ->
+      %Finch.Response{status: 401} ->
         Logger.error("401 received")
         {:error, :wrong_credentials}
 
-      %MachineGun.Response{body: body} = response ->
+      %Finch.Response{body: body} = response ->
         error =
           case Jason.decode(body) do
             {:ok, map} -> map
@@ -136,18 +123,20 @@ defmodule GraphConn.GraphRestCalls do
         Logger.error("Authentication error: #{inspect(error)}")
         {:error, error}
 
-      %MachineGun.Error{reason: reason} ->
+      %Finch.Error{reason: reason} ->
         Logger.error("Authentication error: #{inspect(reason)}")
         {:error, reason}
     end
   end
 
-  def authenticate(_config, apis) do
-    {:error, "missing :api with :path in #{inspect(apis)}"}
+  def authenticate(_base_name, _config, apis) do
+    {:error, "missing :auth key with :path in #{inspect(apis)}"}
   end
 
   @spec execute(module(), atom(), Request.t(), Keyword.t()) ::
-          {:ok, Response.t()} | machine_gun_error() | {:error, {:unknown_api, [any()]}}
+          {:ok, Response.t()}
+          | {:error, ResponseError.t()}
+          | {:error, {:unknown_api, [any()]}}
   def execute(base_name, target_api, request, opts \\ []) do
     with {:ok, %{path: namespace}} <- _get_version(base_name, target_api) do
       [{:config, config}] = :ets.lookup(base_name, :config)
@@ -161,29 +150,8 @@ defmodule GraphConn.GraphRestCalls do
       request
       |> _inject_namespace(namespace)
       |> _inject_token(token)
-      |> _execute(config, opts)
-    end
-  end
-
-  @spec _execute(Request.t(), Keyword.t(), Keyword.t(), pos_integer()) ::
-          {:ok, Response.t()} | machine_gun_error()
-  defp _execute(request, config, opts, attempt \\ 1) do
-    response =
-      request
-      |> _shoot(config, opts)
+      |> _shoot(base_name, config, opts)
       |> _process_response()
-
-    case {response, attempt} do
-      {{:retry, _}, attempt} when attempt < 6 ->
-        Process.sleep(1_000)
-        Logger.info("[GraphRestCalls] Retrying request...")
-        _execute(request, config, opts, attempt + 1)
-
-      {{:retry, error}, _attempt} ->
-        error
-
-      {other, _attempt} ->
-        other
     end
   end
 
@@ -209,7 +177,7 @@ defmodule GraphConn.GraphRestCalls do
   defp _inject_token(%Request{headers: headers} = request, token),
     do: %Request{request | headers: Map.put(headers, "Authorization", "Bearer " <> token)}
 
-  defp _shoot(%Request{} = request, config, opts \\ []) do
+  defp _shoot(%Request{} = request, base_name, config, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, Keyword.get(config, :timeout, 5_000))
 
     uri = _build_uri(request, config)
@@ -231,12 +199,8 @@ defmodule GraphConn.GraphRestCalls do
 
     {_, response} =
       request.method
-      |> to_string()
-      |> String.upcase()
-      |> MachineGun.request(uri, body, headers, %{
-        request_timeout: timeout,
-        pool_group: :graph_conn
-      })
+      |> Finch.build(uri, headers, body)
+      |> Finch.request(Module.concat(base_name, Finch), receive_timeout: timeout)
 
     spawn(fn ->
       Instrumenter.execute(
@@ -251,7 +215,7 @@ defmodule GraphConn.GraphRestCalls do
           node: Node.self(),
           path: request.path,
           method: request.method,
-          status_code: Map.get(response, :status_code)
+          status_code: Map.get(response, :status)
         }
       )
     end)
@@ -264,51 +228,52 @@ defmodule GraphConn.GraphRestCalls do
     "#{transport}://#{config[:host]}:#{config[:port]}#{path}?#{URI.encode_query(query)}"
   end
 
-  @spec _convert_headers(map(), String.t()) :: [{String.t(), charlist()}]
+  @spec _convert_headers(map(), String.t()) :: [
+          {header_name :: String.t(), header_value :: String.t()}
+        ]
   defp _convert_headers(headers, body) do
-    json = 'application/json'
-
-    headers =
-      Enum.map(headers, fn {name, value} ->
-        key = name |> to_string() |> String.downcase()
-        val = value |> to_charlist()
-        {key, val}
-      end)
+    json = "application/json"
 
     if byte_size(body) > 0 do
-      [{"accept", json}, {"content-type", json}, {"content-length", byte_size(body)} | headers]
+      headers
+      |> Map.merge(%{
+        "accept" => json,
+        "content-type" => json
+      })
     else
-      [{"accept", json} | headers]
+      headers
+      |> Map.merge(%{
+        "accept" => json
+      })
     end
+    |> Enum.into([])
   end
 
-  @spec _process_response(machine_gun_response() | machine_gun_error()) ::
-          {:ok, Response.t()} | {:retry, machine_gun_error()}
-  defp _process_response(%MachineGun.Response{body: body} = response) do
-    machine_gun_resp =
+  @spec _process_response(Finch.Response.t() | map()) ::
+          {:ok, Response.t()} | {:error, ResponseError.t()}
+  defp _process_response(%Finch.Response{body: body} = response) do
+    resp =
       case Jason.decode(body) do
         {:ok, result} -> %{response | body: result}
         _ -> response
       end
 
     response = %Response{
-      code: machine_gun_resp.status_code,
-      body: machine_gun_resp.body,
-      headers: machine_gun_resp.headers
+      code: resp.status,
+      body: resp.body,
+      headers: resp.headers
     }
 
     {:ok, response}
   end
 
-  defp _process_response(
-         %MachineGun.Error{reason: {:stop, {:goaway, _, _, _}, _} = reason} = response
-       ) do
-    Logger.warn("[GraphRestCalls] Received GOAWAY: #{inspect(reason)}")
-    {:retry, response}
+  defp _process_response(%{reason: reason} = response) do
+    Logger.warn("[GraphRestCalls] Received: #{inspect(response)}")
+    {:error, %ResponseError{reason: inspect(reason)}}
   end
 
   defp _process_response(error) do
     Logger.error("[GraphRestCalls] Received unhandled REST response: #{inspect(error)}")
-    error
+    {:error, %ResponseError{error: error}}
   end
 end

@@ -19,7 +19,7 @@ defmodule GraphConn.MixProject do
       ],
       dialyzer: [
         plt_add_deps: :apps_direct,
-        plt_add_apps: [:mix, :plug, :cowboy, :jason, :machine_gun]
+        plt_add_apps: [:mix, :plug, :cowboy, :jason, :mint]
       ],
       name: "GraphConn",
       docs: _docs(),
@@ -37,9 +37,9 @@ defmodule GraphConn.MixProject do
   defp _deps do
     [
       {:elixir_uuid, "~> 1.2"},
-      {:machine_gun, "~> 0.1.6"},
       # {:gun, "~> 1.3.3"},
       {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
+      {:finch, "~> 0.10"},
       {:ssl_verify_fun, "~> 1.1"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only

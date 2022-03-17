@@ -13,7 +13,7 @@ defmodule GraphConn.GraphRestCallsTest do
         |> ConnectionManager.parse_urls()
 
       assert {:ok, %{:"action-ws" => %{path: _, protocol: _, subprotocol: _}}} =
-               get_versions(config)
+               get_versions(TestActionHandler, config)
     end
   end
 
@@ -24,9 +24,9 @@ defmodule GraphConn.GraphRestCallsTest do
         |> Application.get_env(TestConn)
         |> ConnectionManager.parse_urls()
 
-      {:ok, versions} = get_versions(config)
+      {:ok, versions} = get_versions(TestActionHandler, config)
 
-      assert {:ok, %{token: _, expires_at: _}} = authenticate(config, versions)
+      assert {:ok, %{token: _, expires_at: _}} = authenticate(TestActionHandler, config, versions)
     end
   end
 end
