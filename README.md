@@ -122,16 +122,7 @@ config :graph_conn, MyConn,
   ]
 ```
 
-For communication with Graph server with REST calls we use pool of connections,
-that needs to be configured as well.
-
-```elixir
-config :machine_gun,
-  graph_conn: %{
-    pool_size: 10,
-    pool_max_overflow: 5,
-  }
-```
+For communication with Graph server with REST calls we use pool of connections.
 
 ### Invoke call
 
