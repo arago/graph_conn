@@ -1,3 +1,8 @@
+# 1.5.0
+
+## 1. Enhancements
+  * Use `finch` lib for REST requests instead of `machine_gun`.
+
 # 1.4.1
 
 ## 1. Enhancements

@@ -13,7 +13,17 @@ defmodule GraphConn.ConnectionManager do
   end
 
   use GenServer
-  alias GraphConn.{ClientState, WsConnections, WsConnection, GraphRestCalls, Request, Response}
+
+  alias GraphConn.{
+    ClientState,
+    WsConnections,
+    WsConnection,
+    GraphRestCalls,
+    Request,
+    Response,
+    ResponseError
+  }
+
   require Logger
 
   @typep version() :: %{path: String.t(), protocol: String.t(), subprotocol: String.t()}
@@ -49,9 +59,9 @@ defmodule GraphConn.ConnectionManager do
 
   @spec execute(atom(), atom(), Request.t(), Keyword.t()) ::
           :ok
-          | {:error, {:unknown_api, [any()]}}
           | {:ok, Response.t()}
-          | GraphRestCalls.machine_gun_error()
+          | {:error, ResponseError.t()}
+          | {:error, {:unknown_api, [any()]}}
   def execute(base_name, target_api, %Request{} = request, opts \\ []) do
     case _get_version(base_name, target_api) do
       {:ok, %{protocol: ""}} -> _execute_rest(base_name, target_api, request, opts)
@@ -186,7 +196,7 @@ defmodule GraphConn.ConnectionManager do
     [{:config, config}] = :ets.lookup(state.base_name, :config)
 
     state =
-      case GraphRestCalls.get_versions(config) do
+      case GraphRestCalls.get_versions(state.base_name, config) do
         {:ok, versions} ->
           _update_ets(state.base_name, :versions, versions)
           send(self(), :connect)
@@ -206,7 +216,7 @@ defmodule GraphConn.ConnectionManager do
     [{:config, config}] = :ets.lookup(state.base_name, :config)
     [{:versions, versions}] = :ets.lookup(state.base_name, :versions)
 
-    case GraphRestCalls.authenticate(config, versions) do
+    case GraphRestCalls.authenticate(state.base_name, config, versions) do
       {:ok, %{token: token, expires_at: expires_at}} ->
         now = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
         # refresh token when it is said that it will expire

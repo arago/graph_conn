@@ -25,11 +25,11 @@ defmodule GraphConn.WS do
     port = Tools.to_integer(port)
     connect_opts = _connect_opts(opts, host)
 
-    Logger.info("Connecting to #{host}:#{port} with #{inspect(connect_opts)}")
+    Logger.info("[GraphConn.WS] Connecting to #{host}:#{port} with #{inspect(opts)}")
 
     with {:ok, conn_pid} <- :gun.open(host, port, connect_opts),
          {:ok, protocol} <- :gun.await_up(conn_pid, :timer.minutes(1)) do
-      Logger.info("Connected to #{host} using #{protocol}")
+      Logger.info("[GraphConn.WS] Connected to #{host} using #{protocol}")
       {:ok, conn_pid}
     end
   end
