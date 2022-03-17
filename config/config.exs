@@ -15,14 +15,5 @@ config :logger, :console,
   level: :debug,
   metadata: [:req_id, :pid]
 
-config :machine_gun,
-  graph_conn: %{
-    # Poolboy size
-    pool_size: 10,
-    # Poolboy max_overflow
-    pool_max_overflow: 5,
-    pool_timeout: 1000
-  }
-
 import_config_if_exists.("#{Mix.env()}.exs")
 import_config_if_exists.("git_ignored.exs")

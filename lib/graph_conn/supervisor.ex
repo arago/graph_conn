@@ -25,6 +25,7 @@ defmodule GraphConn.Supervisor do
     [
       {GraphConn.ClientState, [base_name, internal_state]},
       {GraphConn.WsConnections, [base_name]},
+      {Finch, name: Module.concat(base_name, Finch)},
       {GraphConn.ConnectionManager, [base_name, config]}
     ]
     |> Supervisor.init(strategy: :one_for_all)
