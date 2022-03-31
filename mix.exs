@@ -19,7 +19,7 @@ defmodule GraphConn.MixProject do
       ],
       dialyzer: [
         plt_add_deps: :apps_direct,
-        plt_add_apps: [:mix, :plug, :cowboy, :jason, :mint]
+        plt_add_apps: [:mix, :plug, :cowboy, :jason, :mint, :public_key]
       ],
       name: "GraphConn",
       docs: _docs(),

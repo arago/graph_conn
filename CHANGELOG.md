@@ -1,3 +1,8 @@
+# 1.5.1
+
+## 1. Bug fix
+  * Fix ssl options for ws connection
+
 # 1.5.0
 
 ## 1. Enhancements

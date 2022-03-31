@@ -153,10 +153,10 @@ defmodule GraphConn.WS do
 
     case !!opts[:insecure] do
       true ->
-        connect_opts
+        Map.put(connect_opts, :tls_opts, verify: :verify_none)
 
       false ->
-        Map.put(connect_opts, :transport_opts, _transport_opts(host))
+        Map.put(connect_opts, :tls_opts, _transport_opts(host))
     end
   end
 
@@ -164,11 +164,13 @@ defmodule GraphConn.WS do
   defp _transport_opts(host) do
     [
       verify: :verify_peer,
-      cacerts: :certifi.cacerts(),
-      depth: 99,
+      depth: 10,
+      cacertfile: :certifi.cacertfile(),
       server_name_indication: host,
-      reuse_sessions: false,
-      verify_fun: {&:ssl_verify_hostname.verify_fun/3, [check_hostname: host]}
+      verify_fun: {&:ssl_verify_hostname.verify_fun/3, [check_hostname: host]},
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
     ]
   end
 end
