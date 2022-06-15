@@ -3,6 +3,8 @@ import Config
 config :ex_unit,
   capture_log: true
 
+config :graph_conn, insecure: true
+
 config :graph_conn, GraphConn.TestConn,
   url: "http://localhost:8081",
   insecure: true,

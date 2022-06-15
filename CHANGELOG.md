@@ -1,3 +1,8 @@
+# 1.5.2
+
+## 1. Enhancements
+  * Allow `config :graph_conn, insecure: true` to force insecure SSL connections
+
 # 1.5.1
 
 ## 1. Bug fix
