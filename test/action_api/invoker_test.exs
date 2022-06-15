@@ -33,7 +33,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
     end
 
     test "returns empty map for unknown capability" do
-      assert %{} = ActionInvoker.capability_defaults("invalid_capability")
+      assert %{} == ActionInvoker.capability_defaults("invalid_capability")
     end
   end
 
