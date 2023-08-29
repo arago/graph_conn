@@ -30,7 +30,7 @@ defmodule GraphConn.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :ssl, :certifi]
+      extra_applications: [:logger, :ssl]
     ]
   end
 
@@ -41,6 +41,7 @@ defmodule GraphConn.MixProject do
       {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
       {:finch, "~> 0.10"},
       {:ssl_verify_fun, "~> 1.1"},
+      {:certifi, "~> 2.12"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only
       {:cachex, "~> 3.3"},

@@ -13,9 +13,9 @@ defmodule GraphConn.GunTest do
         protocols: [:http]
       }
 
-      host = 'localhost'
+      host = ~c"localhost"
       port = 8081
-      path = '/api/0.9/action-ws/'
+      path = ~c"/api/0.9/action-ws/"
       assert {:ok, conn_pid} = :gun.open(host, port, connect_opts)
       assert Process.alive?(conn_pid)
       assert {:ok, _protocol} = :gun.await_up(conn_pid, :timer.minutes(1))
