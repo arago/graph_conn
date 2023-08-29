@@ -268,7 +268,7 @@ defmodule GraphConn.GraphRestCalls do
   end
 
   defp _process_response(%{reason: reason} = response) do
-    Logger.warn("[GraphRestCalls] Received: #{inspect(response)}")
+    Logger.warning("[GraphRestCalls] Received: #{inspect(response)}")
     {:error, %ResponseError{reason: inspect(reason)}}
   end
 

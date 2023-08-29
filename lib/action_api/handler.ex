@@ -102,7 +102,7 @@ defmodule GraphConn.ActionApi.Handler do
             %{"type" => "negativeAcknowledged", "id" => req_id} = _msg,
             _
           ) do
-        Logger.warn("[ActionHandler] Server returned NACK", req_id: req_id)
+        Logger.warning("[ActionHandler] Server returned NACK", req_id: req_id)
         ActionApi.Responder.response_acked(__MODULE__, req_id)
       end
 
@@ -128,7 +128,9 @@ defmodule GraphConn.ActionApi.Handler do
       end
 
       def handle_message(:"action-ws", msg, _) do
-        Logger.warn("[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}")
+        Logger.warning(
+          "[ActionHandler] Received unexpected message from action-ws: #{inspect(msg)}"
+        )
       end
 
       defp _task(req_id, capability, params) do
@@ -242,7 +244,7 @@ defmodule GraphConn.ActionApi.Handler do
         do: 3_000
 
       def execute(capability, _params) do
-        Logger.warn("[ActionHandler] Unhandled capability received: #{capability}")
+        Logger.warning("[ActionHandler] Unhandled capability received: #{capability}")
         {:error, %{code: 404, message: "Unhandled capability #{inspect(capability)}"}}
       end
 

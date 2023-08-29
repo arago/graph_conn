@@ -409,7 +409,7 @@ defmodule GraphConn.ActionApi.Invoker do
             {:error, {:nack, error}}
         after
           ack_timeout ->
-            Logger.warn("[ActionInvoker] Message ack timeout after: #{ack_timeout}ms")
+            Logger.warning("[ActionInvoker] Message ack timeout after: #{ack_timeout}ms")
             _execute(request, ack_timeout, attempt + 1)
         end
       end
@@ -473,7 +473,7 @@ defmodule GraphConn.ActionApi.Invoker do
 
       @spec on_config_changed() :: any()
       def on_config_changed,
-        do: Logger.warn("[ActionInvoker] Received unhandled configChanged message")
+        do: Logger.warning("[ActionInvoker] Received unhandled configChanged message")
 
       defoverridable on_config_changed: 0
     end
