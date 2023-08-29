@@ -80,7 +80,7 @@ defmodule GraphConn.ConnectionManager do
   defp _execute_rest(base_name, target_api, request, opts) do
     case GraphRestCalls.execute(base_name, target_api, request, opts) do
       {:ok, %Response{code: 401}} ->
-        Logger.warn("Token has unexpectedly expired. Refreshing token and retrying call...")
+        Logger.warning("Token has unexpectedly expired. Refreshing token and retrying call...")
 
         :ok =
           base_name
@@ -262,7 +262,7 @@ defmodule GraphConn.ConnectionManager do
   defp _get_ws_connection(base_name, target_api) do
     case :ets.lookup(base_name, {target_api, :conn_pid}) do
       [{{^target_api, :conn_pid}, nil}] ->
-        Logger.warn("WS connection is down! Retrying message sending...")
+        Logger.warning("WS connection is down! Retrying message sending...")
         Process.sleep(5)
         _get_ws_connection(base_name, target_api)
 

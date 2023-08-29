@@ -77,7 +77,7 @@ defmodule GraphConn.ActionApi.Responder do
           |> name()
           |> Process.send_after({:resend_response, req_id, resend_after}, resend_after)
 
-        Logger.warn("[ActionHandler.Responder] Resending response", req_id: req_id)
+        Logger.warning("[ActionHandler.Responder] Resending response", req_id: req_id)
         GraphConn.execute(state.base_name, :"action-ws", response)
         Map.put(state.responses, req_id, {response, ref})
       else

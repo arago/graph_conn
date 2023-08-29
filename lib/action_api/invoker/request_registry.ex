@@ -71,7 +71,8 @@ defmodule GraphConn.ActionApi.Invoker.RequestRegistry do
   def respond(base_name, request_id, response, registry \\ LocalRequestRegistry, attempt \\ 1)
 
   def respond(_, request_id, _, _, 6),
-    do: Logger.warn("Ignoring received response for unknown request id: #{inspect(request_id)}")
+    do:
+      Logger.warning("Ignoring received response for unknown request id: #{inspect(request_id)}")
 
   def respond(base_name, request_id, response, registry, attempt) do
     base_name

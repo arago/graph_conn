@@ -40,7 +40,7 @@ defmodule GraphConn do
       {MyConn, [:from_config]},
       # ... other children
     ]
-    
+
     opts = [strategy: :one_for_one]
     Supervisor.start_link(children, opts)
   end
@@ -178,7 +178,7 @@ defmodule GraphConn do
 
       @impl GraphConn
       def handle_message(from_api, msg, _internal_state),
-        do: Logger.warn("Received unhandled message from #{from_api}: #{inspect(msg)}")
+        do: Logger.warning("Received unhandled message from #{from_api}: #{inspect(msg)}")
     end
   end
 

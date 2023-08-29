@@ -155,7 +155,7 @@ defmodule GraphConn.WsConnection do
               %{node: Node.self()}
             )
 
-          Logger.warn("WS connection with #{state.api} went down: #{inspect(reason)}")
+          Logger.warning("WS connection with #{state.api} went down: #{inspect(reason)}")
           {:disconnected, reason}
       end
 
