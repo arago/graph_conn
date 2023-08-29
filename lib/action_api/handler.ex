@@ -122,7 +122,9 @@ defmodule GraphConn.ActionApi.Handler do
 
         execution_timeout = msg["timeout"] || default_execution_timeout(capability)
 
-        Task.Supervisor.start_child(_task_supervisor_name(), task_fun, shutdown: execution_timeout)
+        Task.Supervisor.start_child(_task_supervisor_name(), task_fun,
+          shutdown: execution_timeout
+        )
       end
 
       def handle_message(:"action-ws", msg, _) do
