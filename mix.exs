@@ -47,7 +47,7 @@ defmodule GraphConn.MixProject do
       {:cachex, "~> 3.3"},
       {:cowlib, "~> 2.9", override: true},
       {:murmur, "~> 1.0"},
-      {:telemetry, "~> 0.4 or ~> 1.0.0"},
+      {:telemetry, "~> 0.4 or ~> 1.0"},
 
       # test dependencies
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
