@@ -14,7 +14,7 @@ config :graph_conn, :mock,
         "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
       }
     },
-    "HTTP" => %{
+    "HTTPRequest" => %{
       "description" => "this one invokes HTTP call",
       "mandatoryParameters" => %{
         "method" => %{"default" => "GET", "description" => "HTTP method"},

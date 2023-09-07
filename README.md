@@ -17,15 +17,70 @@ end
 
 ## Telemetry
 
-  Sends telemetry events:
-    * `[:graph_conn, :ws_upgrade], %{time, duration}, %{node, success}`
-    * `[:graph_conn, :ws_down], %{time}, %{node}`
-    * `[:graph_conn, :ws_lost_connection], %{time}, %{node}`
-    * `[:graph_conn, :ws_sent_bytes], %{time, duration, bytes}, %{node}`
-    * `[:graph_conn, :ws_received_bytes], %{time, bytes}, %{node}`
-    * `[:graph_conn, :rest], %{time, duration, bytes_sent, bytes_received}, %{node, path, method, status_code}`
+Sends telemetry events:
+_ `[:graph_conn, :ws_upgrade], %{time, duration}, %{node, success}`
+_ `[:graph_conn, :ws_down], %{time}, %{node}`
+_ `[:graph_conn, :ws_lost_connection], %{time}, %{node}`
+_ `[:graph_conn, :ws_sent_bytes], %{time, duration, bytes}, %{node}`
+_ `[:graph_conn, :ws_received_bytes], %{time, bytes}, %{node}`
+_ `[:graph_conn, :rest], %{time, duration, bytes_sent, bytes_received}, %{node, path, method, status_code}`
 
-  `time` is in UTC, `success` is boolean, `duration` is in ms, `bytes` is number of bytes sent or recieved.
+`time` is in UTC, `success` is boolean, `duration` is in ms, `bytes` is number of bytes sent or recieved.
+
+## Mock Graph server
+
+This library behaves as an application in `dev` env, mocking graph server so AH can connect to it and accept requests.
+
+`docker-compose.yaml` describes both AH and mock graph server, so once compose is up, AH will connect to mock graph server.
+You can attach to running mock graph server session in order to invoke actions on AH.
+
+Note: If you plan to use `ExecuteCommand` or any other `ssh` based capability, make sure to add `ssh-keys/id_rsa.pub`
+into servers `~/.ssh/authorized_keys` file. To ssh to host machine:
+
+```
+cat ssh-keys/id_rsa.pub >> ~/.ssh/authorized_keys
+```
+
+### Setup
+
+1. Make sure that capability is configured in `config/dev.exs`
+
+2. Build and Run docker compose:
+
+```
+docker compose build && \
+docker compose up
+```
+
+3. Attach to the running mock graph
+
+```
+$ docker exec -ti hiro-graph-mock bash
+$ iex --remsh mock
+```
+
+4. Invoke command from running iex session
+
+#### Echo action
+
+```
+iex> params = %{"other_handler" => "Echo", "command" => "ls", "sleep" => 40, "timeout" => 2}
+iex> ActionInvoker.execute(params)
+```
+
+#### SSH action
+
+```
+iex> params = %{"command" => "hostname", "host" => "<ssh-server-name>", "user" => "<username>", "timeout" => 5}
+iex> ActionInvoker.execute("ExecuteCommand", params)
+```
+
+#### HTTP action
+
+```
+iex> params = %{"url" => "https://example.com", "timeout" => 5}
+iex> ActionInvoker.execute("HTTPRequest", params)
+```
 
 ## Test
 
@@ -69,7 +124,6 @@ INTEGRATION_TESTS=true mix test
 
 ### Define your Conn module
 
-
 ```elixir
 defmodule MyConn do
   use GraphConn, otp_app: :graph_conn
@@ -99,7 +153,7 @@ def start(_, _) do
     {MyConn, [:from_config]},
     # ... other children
   ]
-  
+
   opts = [strategy: :one_for_one]
   Supervisor.start_link(children, opts)
 end
