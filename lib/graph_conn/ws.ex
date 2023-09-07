@@ -111,7 +111,7 @@ defmodule GraphConn.WS do
       {:DOWN, _monitor_ref, :process, ^conn_pid, reason} ->
         {:error, reason}
     after
-      :timer.minutes(5) ->
+      5_000 ->
         {:error, :recv_timeout}
     end
   end
