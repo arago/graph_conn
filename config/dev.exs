@@ -23,6 +23,18 @@ config :graph_conn, :mock,
       "optionalParameters" => %{
         "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
       }
+    },
+    "ExecuteWindowsCommand" => %{
+      "description" => "this one executes commands on crappy Windows machines",
+      "mandatoryParameters" => %{
+        "host" => %{"description" => "hostname to execute command on"},
+        "command" => %{"description" => "command to execute (i.e. hostname)"}
+      },
+      "optionalParameters" => %{
+        "command_type" => %{"default" => "cmd", "description" => "CMD or PS"},
+        "arguments" => %{"default" => "", "description" => "optional argument list"},
+        "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
+      }
     }
   },
   applicabilities: %{"action_handler" => %{}}

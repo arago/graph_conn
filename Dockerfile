@@ -14,4 +14,4 @@ RUN mix local.rebar --force && \
     mix deps.get && \
     mix compile
 
-CMD pwd && mix deps.get && iex --sname mock -S mix
+CMD mix deps.get && iex --sname mock -S mix
