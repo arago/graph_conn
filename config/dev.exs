@@ -4,7 +4,18 @@ config :logger, backends: [RingLogger]
 
 config :graph_conn, :mock,
   capabilities: %{
-    "ExecuteCommand" => %{
+    "ExecuteWindowsCommand" => %{
+      "description" => "this one executes commands on crappy Windows machines",
+      "mandatoryParameters" => %{
+        "host" => %{"description" => "hostname to execute command on"},
+        "transport" => %{"description" => "ssl or plain"},
+        "command_type" => %{"description" => "command type CMD or PS"},
+        "command" => %{"description" => "command to execute"}
+      },
+      "optionalParameters" => %{
+        "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
+      }
+    },    "ExecuteCommand" => %{
       "description" => "this one executes commands",
       "mandatoryParameters" => %{
         "command" => %{"description" => "command to execute"},

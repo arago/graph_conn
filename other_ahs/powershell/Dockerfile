@@ -8,6 +8,7 @@ COPY . /scripts
 
 RUN chown hiro:hiro /scripts/*
 
+RUN chown hiro:hiro /scripts/*
 RUN apk add --no-cache python3 py3-pip \
     && apk add --no-cache --virtual build-deps make \
     gcc musl-dev python3-dev libffi-dev openssl-dev cargo
