@@ -1,6 +1,8 @@
 defmodule GraphConn.MixProject do
   use Mix.Project
 
+  @mix_env Mix.env()
+
   def project do
     [
       app: :graph_conn,
@@ -32,7 +34,13 @@ defmodule GraphConn.MixProject do
     [
       extra_applications: [:logger, :ssl]
     ]
+    |> _start_server(@mix_env)
   end
+
+  defp _start_server(list, :dev),
+    do: [{:mod, {GraphConn.MockGraphApplication, []}} | list]
+
+  defp _start_server(list, _), do: list
 
   defp _deps do
     [
@@ -50,6 +58,7 @@ defmodule GraphConn.MixProject do
       {:telemetry, "~> 0.4 or ~> 1.0"},
 
       # test dependencies
+      {:ring_logger, "~> 0.10", only: :dev},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.21", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.12", only: [:dev, :test], runtime: false},
@@ -63,6 +72,6 @@ defmodule GraphConn.MixProject do
     ]
   end
 
-  defp _elixirc_paths(:test), do: ["lib", "test/support"]
+  defp _elixirc_paths(env) when env in [:dev, :test], do: ["lib", "test/support"]
   defp _elixirc_paths(_), do: ["lib"]
 end

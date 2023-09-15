@@ -1,0 +1,4 @@
+wheel==0.36.2
+cryptography==3.4.7
+pypsrp==0.5.0
+pywinrm==0.4.2

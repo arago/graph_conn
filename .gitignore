@@ -25,3 +25,6 @@ graph_conn-*.tar
 # This config file should be used for local dev and testing and it contains
 # real server urls and credentials, thus it must be git ignored.
 /config/git_ignored.exs
+
+# this file appear when ssh capability is invoked from AH docker container
+/ssh-keys/known_hosts
