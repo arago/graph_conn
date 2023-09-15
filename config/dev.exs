@@ -8,14 +8,15 @@ config :graph_conn, :mock,
       "description" => "this one executes commands on crappy Windows machines",
       "mandatoryParameters" => %{
         "host" => %{"description" => "hostname to execute command on"},
-        "transport" => %{"description" => "ssl or plain"},
-        "command_type" => %{"description" => "command type CMD or PS"},
+        "transport" => %{"default" => "ssl", "description" => "ssl or plain"},
+        "command_type" => %{"default" => "cmd", "description" => "command type CMD or PS"},
         "command" => %{"description" => "command to execute"}
       },
       "optionalParameters" => %{
         "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
       }
-    },    "ExecuteCommand" => %{
+    },
+    "ExecuteCommand" => %{
       "description" => "this one executes commands",
       "mandatoryParameters" => %{
         "command" => %{"description" => "command to execute"},
@@ -32,18 +33,6 @@ config :graph_conn, :mock,
         "url" => %{"description" => "url to hit"}
       },
       "optionalParameters" => %{
-        "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
-      }
-    },
-    "ExecuteWindowsCommand" => %{
-      "description" => "this one executes commands on crappy Windows machines",
-      "mandatoryParameters" => %{
-        "host" => %{"description" => "hostname to execute command on"},
-        "command" => %{"description" => "command to execute (i.e. hostname)"}
-      },
-      "optionalParameters" => %{
-        "command_type" => %{"default" => "cmd", "description" => "CMD or PS"},
-        "arguments" => %{"default" => "", "description" => "optional argument list"},
         "timeout" => %{"default" => "120", "description" => "timeout in seconds"}
       }
     }
