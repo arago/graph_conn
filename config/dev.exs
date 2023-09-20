@@ -4,6 +4,15 @@ config :logger, backends: [RingLogger]
 
 config :graph_conn, :mock,
   capabilities: %{
+    "ExecuteLocalCommand" => %{
+      "description" => "this one executes commands on the same machine where AH is running",
+      "mandatoryParameters" => %{
+        "command" => %{"description" => "command to execute"}
+      },
+      "optionalParameters" => %{
+        "timeout" => %{"default" => "5", "description" => "timeout in seconds"}
+      }
+    },
     "ExecuteWindowsCommand" => %{
       "description" => "this one executes commands on crappy Windows machines",
       "mandatoryParameters" => %{
