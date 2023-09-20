@@ -422,11 +422,12 @@ defmodule GraphConn.ActionApi.Invoker do
             Logger.info("[ActionInvoker] Response received")
 
             case response do
+              %{"error" => "exec_timeout"} -> {:error, {:handler_returned_timeout, timeout}}
               %{"error" => error} -> {:error, error}
               _ -> {:ok, response}
             end
         after
-          timeout ->
+          timeout + 1_000 ->
             Logger.error("[ActionInvoker] Response timeout.")
             {:error, {:exec_timeout, timeout}}
         end

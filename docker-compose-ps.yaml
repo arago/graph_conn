@@ -10,7 +10,7 @@ services:
     # network_mode: "host"
     # ports:
     #   - "8080:8080/tcp"
-    network_mode: bridge  
+    network_mode: bridge
     environment:
       - TZ=UTC
       - HIRO_USER=action_handler_username
@@ -28,7 +28,8 @@ services:
         "name":"Windows Remote Commands",
         "capability":"ExecuteWindowsCommand",
         "implementation":"local",
-        "exec":"python3 -u /scripts/windows_remote.py $${host} $${transport} $${command_type} \"$${command}\""
+        "exec":"python3 -u /scripts/windows_remote.py $${host} $${transport} $${command_type} \"$${command}\"",
+        "escape_quotes": true
         }
         ]}
     volumes:
@@ -45,7 +46,7 @@ services:
       dockerfile: Dockerfile
     container_name: hiro-graph-mock
     image: hexpm/elixir:1.15.5-erlang-26.0.2-ubuntu-jammy-20230126
-    network_mode: bridge  
+    network_mode: bridge
     # network_mode: "host"
     # ports:
     #   - "8081:8081/tcp"
