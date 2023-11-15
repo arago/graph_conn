@@ -74,6 +74,7 @@ defmodule GraphConn.GraphRestCalls do
         {:ok, versions}
 
       other ->
+        Logger.error("#{inspect(other)}")
         {:error, other}
     end
   end

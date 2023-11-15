@@ -13,17 +13,15 @@ unless System.get_env("INTEGRATION_TESTS") == "true" do
       :valid_handler_credentials
     )
 
-  {:ok, _} = GraphConn.Test.MockServer.start_link()
+  GraphConn.Test.MockServer.start_link()
 end
 
-{:ok, _pid} =
-  :graph_conn
-  |> Application.get_env(GraphConn.Test.ActionHandler)
-  |> TestActionHandler.start_link()
+:graph_conn
+|> Application.get_env(GraphConn.Test.ActionHandler)
+|> TestActionHandler.start_link()
 
-{:ok, _pid} =
-  :graph_conn
-  |> Application.get_env(GraphConn.TestConn)
-  |> ActionInvoker.start_link()
+:graph_conn
+|> Application.get_env(GraphConn.TestConn)
+|> ActionInvoker.start_link()
 
 Process.sleep(1900)

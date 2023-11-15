@@ -1,7 +1,7 @@
 defmodule GraphConn.Supervisor do
   @moduledoc false
-
   use Supervisor
+  alias GraphConn.Tools
 
   def child_spec([base_name, config]) do
     %{
@@ -38,8 +38,29 @@ defmodule GraphConn.Supervisor do
   defp _name(base_name), do: Module.concat(base_name, Supervisor)
 
   defp _conn_opts do
-    if Application.get_env(:graph_conn, :insecure) == true,
-      do: [conn_opts: [transport_opts: [verify: :verify_none]]],
-      else: []
+    insecure? = Application.get_env(:graph_conn, :insecure) == true
+    proxy = Application.get_env(:graph_conn, :proxy, false)
+
+    case {insecure?, proxy} do
+      {true, false} ->
+        [conn_opts: [transport_opts: [verify: :verify_none]]]
+
+      {true, proxy} ->
+        [conn_opts: [transport_opts: [verify: :verify_none], proxy: _proxy_opts(proxy)]]
+
+      {false, false} ->
+        []
+
+      {false, proxy} ->
+        [conn_opts: [proxy: _proxy_opts(proxy)]]
+    end
+  end
+
+  defp _proxy_opts(config) do
+    address = Keyword.fetch!(config, :address)
+    port = Keyword.fetch!(config, :port) |> Tools.to_integer()
+    opts = Keyword.get(config, :opts, [])
+
+    {:http, address, port, opts}
   end
 end
