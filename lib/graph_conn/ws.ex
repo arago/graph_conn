@@ -25,11 +25,68 @@ defmodule GraphConn.WS do
     port = Tools.to_integer(port)
     connect_opts = _connect_opts(opts, host)
 
+    case _proxy_config() do
+      nil ->
+        _connect(host, port, connect_opts)
+
+      proxy_config ->
+        connect_opts = Map.merge(connect_opts, %{host: host, port: port}) |> Enum.into([])
+        _proxy_connect(proxy_config, connect_opts)
+    end
+  end
+
+  defp _proxy_config do
+    :graph_conn
+    |> Application.get_env(:proxy)
+    |> case do
+      nil ->
+        nil
+
+      proxy_config ->
+        address = Keyword.fetch!(proxy_config, :address) |> String.to_charlist()
+        transport = Keyword.get(proxy_config, :transport, "tcp") |> String.to_atom()
+        secure? = Keyword.get(proxy_config, :insecure, "false") == "false"
+
+        tls_opts =
+          if transport == :tls && secure?,
+            do: _transport_opts(address),
+            else: [verify: :verify_none]
+
+        [
+          address: address,
+          port: Keyword.fetch!(proxy_config, :port) |> Tools.to_integer(),
+          protocols: [:http],
+          trace: false,
+          transport: transport,
+          tls_opts: tls_opts
+        ]
+        |> Enum.into(%{})
+    end
+  end
+
+  defp _connect(host, port, connect_opts) do
     Logger.info("[GraphConn.WS] Connecting to #{host}:#{port} ...")
 
     with {:ok, conn_pid} <- :gun.open(host, port, connect_opts),
          {:ok, protocol} <- :gun.await_up(conn_pid, :timer.minutes(1)) do
       Logger.info("[GraphConn.WS] Connected to #{host} using #{protocol}")
+      {:ok, conn_pid}
+    end
+  end
+
+  defp _proxy_connect(proxy_config, connect_opts) do
+    Logger.info(
+      "[GraphConn.WS] Connecting to #{connect_opts.host}:#{connect_opts.port} via proxy #{proxy_config.address}:#{proxy_config.port} ..."
+    )
+
+    {address, proxy_config} = Map.pop(proxy_config, :address)
+    {port, proxy_config} = Map.pop(proxy_config, :port)
+
+    with {:ok, conn_pid} <- :gun.open(address, port, proxy_config),
+         {:ok, protocol} <- :gun.await_up(conn_pid, :timer.minutes(1)),
+         conn_ref <- :gun.connect(conn_pid, connect_opts),
+         {:response, :fin, 200, _} <- :gun.await(conn_pid, conn_ref) do
+      Logger.info("[GraphConn.WS] Connected to #{connect_opts.host} using #{protocol} via proxy")
       {:ok, conn_pid}
     end
   end

@@ -5,6 +5,15 @@ config :ex_unit,
 
 config :graph_conn, insecure: true
 
+# config :graph_conn,
+#   insecure: true,
+#   proxy: [
+#     address: "localhost",
+#     port: "3128",
+#     transport: "tcp", # or "tls"
+#     insecure: "true"
+#   ]
+
 config :graph_conn, GraphConn.TestConn,
   url: "http://localhost:8081",
   insecure: true,

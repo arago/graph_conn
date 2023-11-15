@@ -29,7 +29,7 @@ defmodule GraphConn.Test.MockServer do
 
   @doc """
   Returns credentials that Mock server will accept as valid for any connection
-  that will invoke REST only commands or action-ws api in a invoker role. 
+  that will invoke REST only commands or action-ws api in a invoker role.
   """
   @spec valid_invoker_credentials :: Keyword.t()
   def valid_invoker_credentials do
@@ -43,7 +43,7 @@ defmodule GraphConn.Test.MockServer do
 
   @doc """
   Returns credentials that Mock server will accept as valid for any connection
-  that will invoke REST only commands or action-ws api in a action handler role. 
+  that will invoke REST only commands or action-ws api in a action handler role.
   """
   @spec valid_handler_credentials :: Keyword.t()
   def valid_handler_credentials do
