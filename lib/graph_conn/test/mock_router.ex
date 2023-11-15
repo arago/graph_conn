@@ -3,14 +3,15 @@ defmodule GraphConn.Test.MockRouter do
 
   use Plug.Router
 
-  plug(Plug.Parsers,
+  plug Plug.Logger
+
+  plug Plug.Parsers,
     parsers: [:json],
     pass: ["application/json"],
     json_decoder: Jason
-  )
 
-  plug(:match)
-  plug(:dispatch)
+  plug :match
+  plug :dispatch
 
   @valid_token "action_invoker"
   @valid_handler_token "action_handler"
