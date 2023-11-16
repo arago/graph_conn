@@ -1,13 +1,14 @@
+# 1.5.4
+
+## 1. Bug fix
+
+- Fix crashing logging when proxy is used
+
 # 1.5.3
 
 ## 1. Enhancements
 
 - Invoker will wait timeout + 1sec so handler have time to return timeout message.
-
-# 1.5.3
-
-## 1. Enhancements
-
 - Allow connection to graph via proxy
 
 # 1.5.2
