@@ -180,7 +180,8 @@ defmodule GraphConn.WsConnection do
         Process.monitor(conn_pid)
         %State{state | status: :connected, conn_pid: conn_pid}
 
-      {:error, _error} ->
+      {:error, error} ->
+        Logger.error("Can't connect to graph: #{inspect(error)}")
         state
     end
   end

@@ -1,3 +1,9 @@
+# 1.5.5
+
+## 1. Bug fix
+
+- Fix connection to graph via proxy
+
 # 1.5.4
 
 ## 1. Bug fix

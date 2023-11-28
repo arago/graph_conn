@@ -75,6 +75,8 @@ defmodule GraphConn.WS do
   end
 
   defp _proxy_connect(proxy_config, connect_opts) do
+    connect_opts = Enum.into(connect_opts, %{})
+
     Logger.info(
       "[GraphConn.WS] Connecting to #{connect_opts[:host]}:#{connect_opts[:port]} via proxy #{proxy_config.address}:#{proxy_config.port} ..."
     )
@@ -83,12 +85,10 @@ defmodule GraphConn.WS do
     {port, proxy_config} = Map.pop(proxy_config, :port)
 
     with {:ok, conn_pid} <- :gun.open(address, port, proxy_config),
-         {:ok, protocol} <- :gun.await_up(conn_pid, :timer.minutes(1)),
+         {:ok, :http} <- :gun.await_up(conn_pid, :timer.minutes(1)),
          conn_ref <- :gun.connect(conn_pid, connect_opts),
          {:response, :fin, 200, _} <- :gun.await(conn_pid, conn_ref) do
-      Logger.info(
-        "[GraphConn.WS] Connected to #{connect_opts[:host]} using #{protocol} via proxy"
-      )
+      Logger.info("[GraphConn.WS] Connected to #{connect_opts[:host]} via proxy")
 
       {:ok, conn_pid}
     end
