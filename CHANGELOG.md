@@ -1,3 +1,9 @@
+# 1.6.1
+
+## Enhancements
+
+- reduce ping/pong interval and make it configurable
+
 # 1.5.5
 
 ## 1. Bug fix
