@@ -7,7 +7,11 @@ defmodule GraphConn.ActionApi.Handler do
 
   @callback default_execution_timeout(String.t()) :: non_neg_integer()
   @callback resend_response_timeout() :: non_neg_integer()
-  @callback execute(capability :: String.t(), params :: %{String.t() => any}) ::
+  @callback execute(
+              req_id :: String.t(),
+              capability :: String.t(),
+              params :: %{String.t() => any}
+            ) ::
               :ok | {:ok, term()} | {:error, term()}
 
   defmacro __using__(opts \\ []) do
@@ -162,7 +166,7 @@ defmodule GraphConn.ActionApi.Handler do
           end)
           |> case do
             {:ok, :execute_action} ->
-              response = _execute_action(capability, params)
+              response = _execute_action(req_id, capability, params)
               _set_response(req_id, response)
 
             {:ok, :wait} ->
@@ -207,11 +211,11 @@ defmodule GraphConn.ActionApi.Handler do
         |> ActionApi.Responder.return_response(__MODULE__, resend_response_timeout())
       end
 
-      defp _execute_action(capability, params) do
+      defp _execute_action(req_id, capability, params) do
         Logger.info("[ActionHandler] Executing #{inspect(capability)}: #{inspect(params)}")
 
-        capability
-        |> execute(params)
+        req_id
+        |> execute(capability, params)
         |> case do
           :ok ->
             ""
@@ -243,12 +247,12 @@ defmodule GraphConn.ActionApi.Handler do
       def resend_response_timeout,
         do: 3_000
 
-      def execute(capability, _params) do
+      def execute(_req_id, capability, _params) do
         Logger.warning("[ActionHandler] Unhandled capability received: #{capability}")
         {:error, %{code: 404, message: "Unhandled capability #{inspect(capability)}"}}
       end
 
-      defoverridable default_execution_timeout: 1, resend_response_timeout: 0, execute: 2
+      defoverridable default_execution_timeout: 1, resend_response_timeout: 0, execute: 3
     end
   end
 end
