@@ -2,6 +2,10 @@
 
 ## Enhancements
 
+- make ws ping interval configurable
+
+## Breaking change:
+
 - `GraphConn.ActionApi.Handler`'s `execute/2` changed to `execute/3`, adding `req_id` as first argument
 
 # 1.6.1
