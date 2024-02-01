@@ -14,23 +14,16 @@ defmodule GraphConn.WsConnection do
             internal_state: map(),
             status: GraphConn.status(),
             last_pong: DateTime.t(),
+            ws_ping: [
+              interval_in_ms: pos_integer(),
+              reconnect_after_missing_pings: pos_integer()
+            ],
             conn_pid: nil | pid()
           }
 
-    @enforce_keys ~w(base_name api internal_state status last_pong)a
+    @enforce_keys ~w(base_name api internal_state status last_pong ws_ping)a
     defstruct @enforce_keys ++ ~w(conn_pid)a
   end
-
-  @ping_interval Application.compile_env(:graph_conn, :ping_interval, 2_000)
-  @reconnect_after_missing_pings Application.compile_env(
-                                   :graph_conn,
-                                   :reconnect_after_missing_pings,
-                                   3
-                                 )
-  @reconnect_after_sec Integer.floor_div(
-                         @ping_interval * @reconnect_after_missing_pings,
-                         1000
-                       )
 
   defp _name(base_name, api) do
     base_name
@@ -67,12 +60,20 @@ defmodule GraphConn.WsConnection do
         api: api,
         internal_state: internal_state,
         status: status,
+        ws_ping: Keyword.get(config, :ws_ping, _default_ping_config()),
         last_pong: DateTime.utc_now()
       }
       |> _connect(config)
       |> _ws_upgrade(version.path, version.subprotocol, token)
 
     {:ok, state}
+  end
+
+  defp _default_ping_config() do
+    [
+      interval_in_ms: 2_000,
+      reconnect_after_missing_pings: 3
+    ]
   end
 
   @impl GenServer
@@ -132,7 +133,10 @@ defmodule GraphConn.WsConnection do
   def handle_info(:check_last_pong, %State{} = state) do
     Logger.debug("[WsConnection] checking last pong")
 
-    reconnect_after = @reconnect_after_sec
+    reconnect_after =
+      (Keyword.get(state.ws_ping, :interval_in_ms) *
+         Keyword.get(state.ws_ping, :reconnect_after_missing_pings))
+      |> Integer.floor_div(1000)
 
     DateTime.utc_now()
     |> DateTime.diff(state.last_pong)
@@ -147,7 +151,7 @@ defmodule GraphConn.WsConnection do
         {:stop, {:error, "Missing pong for more than #{reconnect_after} seconds"}, state}
 
       _ ->
-        Process.send_after(self(), :check_last_pong, @ping_interval)
+        Process.send_after(self(), :check_last_pong, Keyword.get(state.ws_ping, :interval_in_ms))
         {:noreply, state}
     end
   end
@@ -202,7 +206,7 @@ defmodule GraphConn.WsConnection do
     Logger.info("Upgrading connection...")
     :ok = WS.ws_upgrade(conn_pid, path, subprotocol, token)
     Logger.info("WebSocket upgrade succeeded.")
-    Process.send_after(self(), :check_last_pong, @ping_interval)
+    Process.send_after(self(), :check_last_pong, Keyword.get(state.ws_ping, :interval_in_ms))
     state
   end
 end

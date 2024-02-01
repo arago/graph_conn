@@ -16,6 +16,7 @@ defmodule GraphConn.WS do
   - `timeout`: :infinity or a number to keep connection alive.
   - `retry`: number of retries before giving up.
   - `retry_timeout`: time to wait for retrying.
+  - `ws_ping`: is a keyword list with `interval_in_ms` in which gun will send ping to server.
   - `protocols`: defaults to `[:http2, :http]`. Note that `http2` can't be upgraded to websocket!
   """
   @spec connect(String.t() | charlist(), String.t() | pos_integer(), Keyword.t()) ::
@@ -201,11 +202,17 @@ defmodule GraphConn.WS do
 
   @spec _connect_opts(Keyword.t(), charlist()) :: %{atom() => any}
   defp _connect_opts(opts, host) do
+    ws_ping_interval =
+      opts
+      |> Keyword.get(:ws_ping, [])
+      |> Keyword.get(:interval_in_ms, 5_000)
+
     connect_opts = %{
       connect_timeout: Keyword.get(opts, :connect_timeout, :timer.minutes(1)),
       retry: Keyword.get(opts, :retry, 10),
       retry_timeout: Keyword.get(opts, :retry_timeout, 100),
       http_opts: %{keepalive: Keyword.get(opts, :keepalive, :infinity)},
+      ws_opts: %{keepalive: Keyword.get(opts, :ws_ping_interval, ws_ping_interval)},
       http2_opts: %{keepalive: Keyword.get(opts, :keepalive, :infinity)},
       protocols: opts[:protocols] || [:http, :http2],
       transport: Keyword.get(opts, :transport, :tls)

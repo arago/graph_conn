@@ -18,6 +18,10 @@ config :graph_conn, GraphConn.TestConn,
   url: "http://localhost:8081",
   insecure: true,
   timeout: 30_000,
+  ws_ping: [
+    interval_in_ms: 2_000,
+    reconnect_after_missing_pings: 3
+  ],
   auth: [
     credentials: [
       client_id: "action_invoker",
@@ -31,6 +35,10 @@ config :graph_conn, GraphConn.TestConn,
 config :graph_conn, ActionHandler,
   url: "http://localhost:8081",
   insecure: true,
+  ws_ping: [
+    interval_in_ms: 2_000,
+    reconnect_after_missing_pings: 3
+  ],
   auth: [
     credentials: [
       client_id: "action_handler",
