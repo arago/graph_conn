@@ -44,8 +44,10 @@ defmodule GraphConn.ActionApi.Request do
 
   @spec _calculate_id(build_params()) :: String.t()
   def _calculate_id(payload) do
-    "#{payload.ticket_id}#{payload.handler}#{payload.capability}#{inspect(payload.params)}"
-    |> Murmur.hash_x64_128()
-    |> to_string()
+    term = {payload.ticket_id, payload.handler, payload.capability, payload.params}
+
+    :md5
+    |> :crypto.hash(:erlang.term_to_binary(term))
+    |> Base.encode32(padding: false)
   end
 end
