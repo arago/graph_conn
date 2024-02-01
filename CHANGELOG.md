@@ -1,3 +1,9 @@
+# 1.7.1
+
+## Maintenance
+
+- remove `murmur` and clean unused dependencies
+
 # 1.7.0
 
 ## Enhancements

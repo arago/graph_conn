@@ -54,7 +54,6 @@ defmodule GraphConn.MixProject do
       ## needed for action handlers only
       {:cachex, "~> 3.3"},
       {:cowlib, "~> 2.9", override: true},
-      {:murmur, "~> 1.0"},
       {:telemetry, "~> 0.4 or ~> 1.0"},
 
       # test dependencies
