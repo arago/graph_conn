@@ -7,16 +7,16 @@ defmodule TestActionHandler do
   alias GraphConn.ActionApi.Handler.Echo
 
   @impl GraphConn.ActionApi.Handler
-  def execute("MakeDialyzerPass for `:ok` response", _),
+  def execute(_req_id, "MakeDialyzerPass for `:ok` response", _),
     do: :ok
 
-  def execute("ExecuteCommand", %{"other_handler" => "Echo"} = params),
+  def execute(_req_id, "ExecuteCommand", %{"other_handler" => "Echo"} = params),
     do: Echo.execute(params)
 
-  def execute("ExecuteLocalCommand", %{"command" => "echo test"} = _params),
+  def execute(_req_id, "ExecuteLocalCommand", %{"command" => "echo test"} = _params),
     do: {:ok, %{exec: "test\n"}}
 
-  def execute("HTTP", params) do
+  def execute(_req_id, "HTTP", params) do
     {:ok,
      %{
        "body" => params["body"],
@@ -26,7 +26,7 @@ defmodule TestActionHandler do
      }}
   end
 
-  def execute("RunScript", %{"host" => "localhost"} = params) do
+  def execute(_req_id, "RunScript", %{"host" => "localhost"} = params) do
     {:ok, params}
 
     {:error, "the command does not point to an existing file"}
