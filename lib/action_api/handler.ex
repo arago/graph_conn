@@ -12,7 +12,7 @@ defmodule GraphConn.ActionApi.Handler do
               capability :: String.t(),
               params :: %{String.t() => any}
             ) ::
-              :ok | {:ok, term()} | {:error, term()}
+              {:ok, term()} | {:error, term()}
 
   defmacro __using__(opts \\ []) do
     quote location: :keep do
@@ -127,7 +127,7 @@ defmodule GraphConn.ActionApi.Handler do
         execution_timeout = msg["timeout"] || default_execution_timeout(capability)
 
         Task.Supervisor.start_child(_task_supervisor_name(), task_fun,
-          shutdown: execution_timeout
+          shutdown: execution_timeout + 500
         )
       end
 
@@ -217,9 +217,6 @@ defmodule GraphConn.ActionApi.Handler do
         req_id
         |> execute(capability, params)
         |> case do
-          :ok ->
-            ""
-
           {:ok, response} ->
             response
             |> Jason.encode!()
