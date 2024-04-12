@@ -1,3 +1,9 @@
+# 1.7.2
+
+## Enhancements
+
+- Wait with rejecting unknown api if no apis are registered yet
+
 # 1.7.1
 
 ## Maintenance

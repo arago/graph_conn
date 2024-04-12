@@ -276,13 +276,27 @@ defmodule GraphConn.ConnectionManager do
     end
   end
 
-  @spec _get_version(atom(), atom()) :: {:ok, version()} | {:error, {:unknown_api, [atom()]}}
-  defp _get_version(base_name, target_api) do
+  @spec _get_version(atom(), atom(), pos_integer()) ::
+          {:ok, version()} | {:error, {:unknown_api, [atom()]}}
+  defp _get_version(base_name, target_api, attempt \\ 1)
+
+  defp _get_version(_, _, 6),
+    do: {:error, {:unknown_api, []}}
+
+  defp _get_version(base_name, target_api, attempt) do
     versions = _ets_versions(base_name)
 
     case Map.get(versions, target_api) do
-      nil -> {:error, {:unknown_api, Map.keys(versions)}}
-      version -> {:ok, version}
+      nil ->
+        if versions == %{} do
+          Process.sleep(20)
+          _get_version(base_name, target_api, attempt + 1)
+        else
+          {:error, {:unknown_api, Map.keys(versions)}}
+        end
+
+      version ->
+        {:ok, version}
     end
   end
 
