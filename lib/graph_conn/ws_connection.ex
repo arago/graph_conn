@@ -108,7 +108,7 @@ defmodule GraphConn.WsConnection do
         "[WsConnection] Just received text message on #{state.api}:\n#{inspect(msg)}"
       end)
 
-      apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
+      _handle_message(msg, state)
     end)
 
     {:noreply, state}
@@ -178,10 +178,29 @@ defmodule GraphConn.WsConnection do
     {:stop, status, state}
   end
 
+  def handle_info({:gun_ws, _, _, :close}, %State{} = state) do
+    {:stop, "server sent close request", state}
+  end
+
+  def handle_info({:gun_ws, _, _, {:close, _code, msg}}, %State{} = state) do
+    {:stop, "server sent close request: #{msg}", state}
+  end
+
+  def handle_info({:gun_down, _, _, :closed, _}, %State{} = state) do
+    {:stop, "WS connection went down", state}
+  end
+
   def handle_info(message, %State{} = state) do
     Logger.debug(fn -> "Unexpected message: #{inspect(message)} on state: #{inspect(state)}" end)
     {:noreply, state}
   end
+
+  defp _handle_message(%{"type" => "hello"} = msg, _state) do
+    Logger.info("[WsConnection] Received hello message: #{inspect(msg)}")
+  end
+
+  defp _handle_message(%{} = msg, state),
+    do: apply(state.base_name, :handle_message, [state.api, msg, state.internal_state])
 
   ## Helper functions
 
