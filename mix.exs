@@ -6,7 +6,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.7.2",
+      version: "1.7.3",
       elixir: "~> 1.10",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
@@ -52,7 +52,7 @@ defmodule GraphConn.MixProject do
       {:certifi, "~> 2.12"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only
-      {:cachex, "~> 3.3"},
+      {:cachex, "~> 3.3", optional: true},
       {:cowlib, "~> 2.9", override: true},
       {:telemetry, "~> 0.4 or ~> 1.0"},
 
