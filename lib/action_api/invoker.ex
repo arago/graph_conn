@@ -376,13 +376,18 @@ defmodule GraphConn.ActionApi.Invoker do
 
       @spec _execute(ActionApi.Request.t(), pos_integer(), pos_integer()) ::
               :ok | {:ok, response :: any()} | {:error, ActionApi.execution_error()}
-      defp _execute(request, ack_timeout, attempt \\ 1)
+      defp _execute(request, ack_timeout, attempt \\ 1, last_call? \\ false)
 
-      defp _execute(%ActionApi.Request{} = request, ack_timeout, attempt)
+      defp _execute(%ActionApi.Request{} = request, ack_timeout, attempt, _)
            when attempt > @number_of_request_retries,
            do: {:error, {:ack_timeout, ack_timeout * @number_of_request_retries}}
 
-      defp _execute(%ActionApi.Request{id: request_id} = request, ack_timeout, attempt) do
+      defp _execute(
+             %ActionApi.Request{id: request_id} = request,
+             ack_timeout,
+             attempt,
+             last_call?
+           ) do
         Logger.info("[ActionInvoker] Sending request to server")
 
         :ok =
@@ -395,22 +400,38 @@ defmodule GraphConn.ActionApi.Invoker do
         receive do
           {:ack, ^request_id} ->
             Logger.info("[ActionInvoker] Ack received")
-            _wait_for_response(request_id, request.timeout)
+
+            timeout =
+              if last_call?,
+                do: 0,
+                else: request.timeout
+
+            request_id
+            |> _wait_for_response(request.timeout)
+            |> case do
+              {:error, {:exec_timeout, _}} ->
+                if last_call? do
+                  Logger.error("[ActionInvoker] Response timeout.")
+                  {:error, {:exec_timeout, request.timeout}}
+                else
+                  Logger.warning("[Invoker] Sending last call")
+                  _execute(request, ack_timeout, 1, true)
+                end
+
+              response ->
+                response
+            end
 
           {:nack, ^request_id, %{code: 404} = error} ->
             {:error, {:nack, error}}
 
           {:nack, ^request_id, error} ->
             Logger.error("[ActionInvoker] Message nacked: #{inspect(error)}")
-            # Retry sending message after nack is received.
-            Process.sleep(2 * ack_timeout)
-            _execute(request, ack_timeout, attempt + 1)
-
             {:error, {:nack, error}}
         after
           ack_timeout ->
             Logger.warning("[ActionInvoker] Message ack timeout after: #{ack_timeout}ms")
-            _execute(request, ack_timeout, attempt + 1)
+            _execute(request, ack_timeout, attempt + 1, last_call?)
         end
       end
 
@@ -422,13 +443,20 @@ defmodule GraphConn.ActionApi.Invoker do
             Logger.info("[ActionInvoker] Response received")
 
             case response do
-              %{"error" => "exec_timeout"} -> {:error, {:handler_returned_timeout, timeout}}
-              %{"error" => error} -> {:error, error}
-              _ -> {:ok, response}
+              %{"error" => "exec_timeout"} ->
+                {:error, {:handler_returned_timeout, timeout}}
+
+              %{"error" => "request_timed_out", "last_status" => last_status} ->
+                {:error, {:action_api_returned_timeout, last_status}}
+
+              %{"error" => error} ->
+                {:error, error}
+
+              _ ->
+                {:ok, response}
             end
         after
           timeout + 1_000 ->
-            Logger.error("[ActionInvoker] Response timeout.")
             {:error, {:exec_timeout, timeout}}
         end
       end
