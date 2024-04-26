@@ -37,7 +37,7 @@ defmodule GraphConn do
   ```
   def start(_, _) do
     children = [
-      {MyConn, [:from_config]},
+      {MyConn, :from_config},
       # ... other children
     ]
 
@@ -52,7 +52,7 @@ defmodule GraphConn do
 
   ```
   config :graph_conn, MyConn,
-    host: "example.com",
+    url: "example.com",
     port: 8443,
     insecure: true,
     credentials: [

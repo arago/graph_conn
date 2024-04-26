@@ -107,7 +107,6 @@ defmodule GraphConn.GraphRestCalls do
       %Finch.Response{status: 200, body: body} ->
         Logger.info("Successfully authenticated.")
         %{"_TOKEN" => token, "expires-at" => expires_at} = Jason.decode!(body)
-
         {:ok, %{token: token, expires_at: expires_at}}
 
       %Finch.Response{status: 401} ->
@@ -176,7 +175,7 @@ defmodule GraphConn.GraphRestCalls do
     do: request
 
   defp _inject_token(%Request{headers: headers} = request, token),
-    do: %Request{request | headers: Map.put(headers, "Authorization", "Bearer " <> token)}
+    do: %Request{request | headers: Map.put_new(headers, "Authorization", "Bearer " <> token)}
 
   defp _shoot(%Request{} = request, base_name, config, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, Keyword.get(config, :timeout, 5_000))

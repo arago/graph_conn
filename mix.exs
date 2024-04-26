@@ -6,7 +6,7 @@ defmodule GraphConn.MixProject do
   def project do
     [
       app: :graph_conn,
-      version: "1.7.3",
+      version: "1.8.0",
       elixir: "~> 1.10",
       start_permanent: true,
       test_coverage: [tool: ExCoveralls],
@@ -37,6 +37,7 @@ defmodule GraphConn.MixProject do
     |> _start_server(@mix_env)
   end
 
+  # Comment out this function if you want to run dev env against local action api.
   defp _start_server(list, :dev),
     do: [{:mod, {GraphConn.MockGraphApplication, []}} | list]
 
