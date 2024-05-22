@@ -1,3 +1,16 @@
+# 1.8.0
+
+## Enhancements
+
+- Invoker doesn't send request again on nack
+- More descriptive handling of dropped ws connections
+- Make `cachex` optional (only needed by action_handler)
+- Explicit support of new action-api features:
+  - Log "hello" message when ws connection is successfully established
+  - Invoker sends "last call" instead of immediate timeout (maybe cached response is waiting but wasn't delivered)
+  - More descriptive timeout messages (with last success status in action api)
+- CI tests for elixir >= 1.15
+
 # 1.7.2
 
 ## Enhancements
