@@ -47,7 +47,7 @@ defmodule GraphConn.MixProject do
     [
       {:elixir_uuid, "~> 1.2"},
       # {:gun, "~> 2.0.1"},
-      {:gun, github: "ninenines/gun", tag: "2.0.0-pre.2", override: true},
+      {:gun, github: "ninenines/gun", tag: "2.1.0"},
       {:finch, "~> 0.10"},
       {:ssl_verify_fun, "~> 1.1"},
       {:certifi, "~> 2.12"},

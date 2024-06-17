@@ -1,3 +1,9 @@
+# 1.8.1
+
+## Enhancements
+
+- Bump gun to ~> 2.1.0
+
 # 1.8.0
 
 ## Enhancements
