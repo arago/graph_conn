@@ -18,11 +18,12 @@ defmodule GraphConn.WsConnection do
               interval_in_ms: pos_integer(),
               reconnect_after_missing_pings: pos_integer()
             ],
-            conn_pid: nil | pid()
+            conn_pid: nil | pid(),
+            stream_ref: nil | reference()
           }
 
     @enforce_keys ~w(base_name api internal_state status last_pong ws_ping)a
-    defstruct @enforce_keys ++ ~w(conn_pid)a
+    defstruct @enforce_keys ++ ~w(conn_pid stream_ref)a
   end
 
   defp _name(base_name, api) do
@@ -83,7 +84,7 @@ defmodule GraphConn.WsConnection do
         "[WsConnection] Pushing message to #{state.api}:\n#{inspect(request.body)}"
       end)
 
-      WS.push(state.conn_pid, Jason.encode!(request.body))
+      WS.push(state.conn_pid, state.stream_ref, Jason.encode!(request.body))
     end)
 
     {:noreply, state}
@@ -223,9 +224,9 @@ defmodule GraphConn.WsConnection do
 
   defp _ws_upgrade(%State{conn_pid: conn_pid} = state, path, subprotocol, token) do
     Logger.info("Upgrading connection...")
-    :ok = WS.ws_upgrade(conn_pid, path, subprotocol, token)
+    {:ok, stream_ref} = WS.ws_upgrade(conn_pid, path, subprotocol, token)
     Logger.info("WebSocket upgrade succeeded.")
     Process.send_after(self(), :check_last_pong, Keyword.get(state.ws_ping, :interval_in_ms))
-    state
+    %State{state | stream_ref: stream_ref}
   end
 end

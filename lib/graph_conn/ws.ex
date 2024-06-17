@@ -95,7 +95,8 @@ defmodule GraphConn.WS do
     end
   end
 
-  @spec ws_upgrade(pid(), String.t(), String.t(), String.t()) :: :ok | {:error, any()}
+  @spec ws_upgrade(pid(), String.t(), String.t(), String.t()) ::
+          {:ok, stream_ref :: reference()} | {:error, any()}
   def ws_upgrade(conn_pid, path, subprotocol, token) do
     mono_start = System.monotonic_time()
 
@@ -119,14 +120,16 @@ defmodule GraphConn.WS do
       %{node: Node.self(), success: success?}
     )
 
-    response
+    if response == :ok,
+      do: {:ok, stream_ref},
+      else: response
   end
 
-  @spec push(pid(), String.t()) :: :ok
-  def push(conn_pid, body) do
+  @spec push(pid(), reference(), String.t()) :: :ok
+  def push(conn_pid, stream_ref, body) do
     Logger.debug(fn -> "[GraphConn.WS] Pushing #{inspect(body)}" end)
     mono_start = System.monotonic_time()
-    :ok = :gun.ws_send(conn_pid, {:text, body})
+    :ok = :gun.ws_send(conn_pid, stream_ref, {:text, body})
 
     :ok =
       Instrumenter.execute(
