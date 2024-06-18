@@ -111,8 +111,13 @@ defmodule GraphConn.WS do
         }
       )
 
-    response = _async_response(conn_pid, stream_ref)
-    success? = response == :ok
+    {success?, response} =
+      conn_pid
+      |> _async_response(stream_ref)
+      |> case do
+        {:ok, stream_ref} -> {true, {:ok, stream_ref}}
+        error -> {false, error}
+      end
 
     Instrumenter.execute(
       :ws_upgrade,
@@ -120,10 +125,12 @@ defmodule GraphConn.WS do
       %{node: Node.self(), success: success?}
     )
 
-    if response == :ok,
-      do: {:ok, stream_ref},
-      else: response
+    response
   end
+
+  @spec ping(pid(), reference()) :: :ok
+  def ping(conn_pid, stream_ref),
+    do: :ok = :gun.ws_send(conn_pid, stream_ref, :ping)
 
   @spec push(pid(), reference(), String.t()) :: :ok
   def push(conn_pid, stream_ref, body) do
@@ -143,7 +150,10 @@ defmodule GraphConn.WS do
       )
   end
 
-  @spec _async_response(pid(), reference()) :: Response.t() | :ok | {:error, any()}
+  @spec _async_response(pid(), reference() | [reference()]) ::
+          Response.t()
+          | {:ok, reference() | [reference()]}
+          | {:error, any()}
   defp _async_response(conn_pid, stream_ref) do
     Logger.debug("Waiting for response")
 
@@ -160,8 +170,8 @@ defmodule GraphConn.WS do
             {:error, reason}
         end
 
-      {:gun_upgrade, ^conn_pid, ^stream_ref, ["websocket"], _response_headers} ->
-        :ok
+      {:gun_upgrade, ^conn_pid, stream_refs, ["websocket"], _response_headers} ->
+        {:ok, stream_refs}
 
       {:gun_error, ^conn_pid, ^stream_ref, reason} ->
         {:error, reason}
@@ -174,6 +184,10 @@ defmodule GraphConn.WS do
 
       {:DOWN, _monitor_ref, :process, ^conn_pid, reason} ->
         {:error, reason}
+
+      {:gun_tunnel_up, ^conn_pid, new_stream_ref, :http} ->
+        refs = List.flatten([new_stream_ref, stream_ref])
+        _async_response(conn_pid, refs)
     after
       5_000 ->
         {:error, :recv_timeout}

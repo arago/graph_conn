@@ -131,6 +131,14 @@ defmodule GraphConn.WsConnection do
     {:noreply, %{state | last_pong: DateTime.utc_now()}}
   end
 
+  def handle_info(:send_ping, %State{} = state) do
+    Logger.debug("[WsConnection] Sending ping")
+
+    WS.ping(state.conn_pid, state.stream_ref)
+    Process.send_after(self(), :send_ping, Keyword.get(state.ws_ping, :interval_in_ms))
+    {:noreply, state}
+  end
+
   def handle_info(:check_last_pong, %State{} = state) do
     Logger.debug("[WsConnection] checking last pong")
 
@@ -226,6 +234,12 @@ defmodule GraphConn.WsConnection do
     Logger.info("Upgrading connection...")
     {:ok, stream_ref} = WS.ws_upgrade(conn_pid, path, subprotocol, token)
     Logger.info("WebSocket upgrade succeeded.")
+
+    if Application.get_env(:graph_conn, :proxy) do
+      # Something's wrong with sending pings when connected via proxy so we need to do that on our own.
+      Process.send_after(self(), :send_ping, Keyword.get(state.ws_ping, :interval_in_ms))
+    end
+
     Process.send_after(self(), :check_last_pong, Keyword.get(state.ws_ping, :interval_in_ms))
     %State{state | stream_ref: stream_ref}
   end

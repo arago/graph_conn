@@ -46,8 +46,8 @@ defmodule GraphConn.MixProject do
   defp _deps do
     [
       {:elixir_uuid, "~> 1.2"},
-      # {:gun, "~> 2.0.1"},
-      {:gun, github: "ninenines/gun", tag: "2.1.0"},
+      # {:gun, "~> 2.1.0"},
+      {:gun, github: "burmajam/gun", branch: "fix-proxy-problem"},
       {:finch, "~> 0.10"},
       {:ssl_verify_fun, "~> 1.1"},
       {:certifi, "~> 2.12"},
