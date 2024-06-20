@@ -57,7 +57,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
     test "invokes RunScript with failure" do
       params = %{"command" => "failing_command", "host" => "localhost"}
 
-      assert {:error, "the command does not point to an existing file"} =
+      assert {:error, _req_id, "the command does not point to an existing file"} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "RunScript", params)
     end
 
@@ -105,7 +105,8 @@ defmodule GraphConn.ActionApi.InvokerTest do
     end
 
     test "returns nack for invalid capability" do
-      assert {:error, {:nack, %{code: 404, message: "capability invalid_capability not found"}}} =
+      assert {:error, _req_id,
+              {:nack, %{code: 404, message: "capability invalid_capability not found"}}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "invalid_capability", %{})
     end
 
@@ -116,7 +117,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
         "timeout" => 5
       }
 
-      assert {:error, %{"code" => 404, "message" => "Error message"}} =
+      assert {:error, _req_id, %{"code" => 404, "message" => "Error message"}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params)
     end
 
@@ -229,7 +230,7 @@ defmodule GraphConn.ActionApi.InvokerTest do
     test "returns timeout if execution took too long" do
       params = %{other_handler: "Echo", command: "ls", sleep: 10_000}
 
-      assert {:error, {:exec_timeout, 3_000}} =
+      assert {:error, _req_id, {:exec_timeout, 3_000}} =
                ActionInvoker.execute(UUID.uuid4(), _ah_id(), "ExecuteCommand", params,
                  timeout: 3_000
                )

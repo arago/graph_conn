@@ -1,4 +1,8 @@
-# 1.8.2
+# 1.9.0
+
+## Enhancements
+
+- BREAKING: Invoker returns req_id in error messages
 
 ## Bugfix
 

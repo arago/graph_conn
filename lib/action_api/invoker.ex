@@ -323,7 +323,9 @@ defmodule GraphConn.ActionApi.Invoker do
       defaults are in seconds).
       """
       @spec execute(String.t(), String.t(), String.t(), map(), Keyword.t()) ::
-              :ok | {:ok, response :: any()} | {:error, ActionApi.execution_error()}
+              :ok
+              | {:ok, response :: any()}
+              | {:error, req_id :: String.t(), ActionApi.execution_error()}
       def execute(ticket_id, action_handler_id, capability_name, %{} = params, opts \\ []) do
         Logger.debug("Trying to send: #{params["req"]}")
         ack_timeout = Keyword.get(opts, :ack_timeout, @ack_timeout)
@@ -375,12 +377,14 @@ defmodule GraphConn.ActionApi.Invoker do
       end
 
       @spec _execute(ActionApi.Request.t(), pos_integer(), pos_integer()) ::
-              :ok | {:ok, response :: any()} | {:error, ActionApi.execution_error()}
+              :ok
+              | {:ok, response :: any()}
+              | {:error, request_id :: String.t(), ActionApi.execution_error()}
       defp _execute(request, ack_timeout, attempt \\ 1, last_call? \\ false)
 
       defp _execute(%ActionApi.Request{} = request, ack_timeout, attempt, _)
            when attempt > @number_of_request_retries,
-           do: {:error, {:ack_timeout, ack_timeout * @number_of_request_retries}}
+           do: {:error, request.id, {:ack_timeout, ack_timeout * @number_of_request_retries}}
 
       defp _execute(
              %ActionApi.Request{id: request_id} = request,
@@ -409,10 +413,10 @@ defmodule GraphConn.ActionApi.Invoker do
             request_id
             |> _wait_for_response(request.timeout)
             |> case do
-              {:error, {:exec_timeout, _}} ->
+              {:error, ^request_id, {:exec_timeout, _}} ->
                 if last_call? do
                   Logger.error("[ActionInvoker] Response timeout.")
-                  {:error, {:exec_timeout, request.timeout}}
+                  {:error, request_id, {:exec_timeout, request.timeout}}
                 else
                   Logger.warning("[Invoker] Sending last call")
                   _execute(request, ack_timeout, 1, true)
@@ -423,11 +427,11 @@ defmodule GraphConn.ActionApi.Invoker do
             end
 
           {:nack, ^request_id, %{code: 404} = error} ->
-            {:error, {:nack, error}}
+            {:error, request_id, {:nack, error}}
 
           {:nack, ^request_id, error} ->
             Logger.error("[ActionInvoker] Message nacked: #{inspect(error)}")
-            {:error, {:nack, error}}
+            {:error, request_id, {:nack, error}}
         after
           ack_timeout ->
             Logger.warning("[ActionInvoker] Message ack timeout after: #{ack_timeout}ms")
@@ -444,20 +448,20 @@ defmodule GraphConn.ActionApi.Invoker do
 
             case response do
               %{"error" => "exec_timeout"} ->
-                {:error, {:handler_returned_timeout, timeout}}
+                {:error, request_id, {:handler_returned_timeout, timeout}}
 
               %{"error" => "request_timed_out", "last_status" => last_status} ->
-                {:error, {:action_api_returned_timeout, last_status}}
+                {:error, request_id, {:action_api_returned_timeout, last_status}}
 
               %{"error" => error} ->
-                {:error, error}
+                {:error, request_id, error}
 
               _ ->
                 {:ok, response}
             end
         after
           timeout + 1_000 ->
-            {:error, {:exec_timeout, timeout}}
+            {:error, request_id, {:exec_timeout, timeout}}
         end
       end
 
