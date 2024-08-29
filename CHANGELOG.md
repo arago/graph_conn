@@ -1,3 +1,9 @@
+# 1.9.1
+
+## Enhancements
+
+- Allow `config :graph_conn, ca_cert: "/absolute/path/to/my_cert.crt"` to be set
+
 # 1.9.0
 
 ## Enhancements

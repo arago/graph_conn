@@ -246,10 +246,12 @@ defmodule GraphConn.WS do
 
   @spec _transport_opts(charlist()) :: Keyword.t()
   defp _transport_opts(host) do
+    ca_cert_file = Application.get_env(:graph_conn, :ca_cert) || :certifi.cacertfile()
+
     [
       verify: :verify_peer,
       depth: 10,
-      cacertfile: :certifi.cacertfile(),
+      cacertfile: ca_cert_file,
       server_name_indication: host,
       verify_fun: {&:ssl_verify_hostname.verify_fun/3, [check_hostname: host]},
       customize_hostname_check: [
