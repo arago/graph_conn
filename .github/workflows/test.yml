@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         elixir: ["1.15", "1.16"]
-        erlang: ["24", "25", "26"]
+        erlang: ["25", "26"]
 
     steps:
       - uses: actions/checkout@v3

@@ -1,3 +1,10 @@
+# 1.9.2
+
+## Bug fix
+
+- Requires otp >= 25
+- use correctly custom CA if one is set
+
 # 1.9.1
 
 ## Enhancements
