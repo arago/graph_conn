@@ -40,37 +40,33 @@ defmodule GraphConn.Supervisor do
   defp _conn_opts do
     insecure? = Application.get_env(:graph_conn, :insecure) == true
     proxy = Application.get_env(:graph_conn, :proxy, false)
-    ca_cert_file = Application.get_env(:graph_conn, :ca_cert)
+
+    if ca_cert_file = Application.get_env(:graph_conn, :ca_cert),
+      do: :public_key.cacerts_load(ca_cert_file)
 
     case {insecure?, proxy} do
       {true, false} ->
-        transport_opts =
-          [verify: :verify_none]
-          |> _inject_ca_cert_file(ca_cert_file)
-
+        transport_opts = [verify: :verify_none]
         [conn_opts: [transport_opts: transport_opts]]
 
       {true, proxy} ->
-        transport_opts =
-          [verify: :verify_none]
-          |> _inject_ca_cert_file(ca_cert_file)
-
+        transport_opts = [verify: :verify_none]
         [conn_opts: [transport_opts: transport_opts, proxy: _proxy_opts(proxy)]]
 
       {false, false} ->
-        transport_opts =
-          [verify: :verify_peer]
-          |> _inject_ca_cert_file(ca_cert_file)
-
-        [conn_opts: [transport_opts: transport_opts]]
+        [conn_opts: [transport_opts: _tls_transport_opts()]]
 
       {false, proxy} ->
-        transport_opts =
-          [verify: :verify_peer]
-          |> _inject_ca_cert_file(ca_cert_file)
-
-        [conn_opts: [transport_opts: transport_opts, proxy: _proxy_opts(proxy)]]
+        [conn_opts: [transport_opts: _tls_transport_opts(), proxy: _proxy_opts(proxy)]]
     end
+  end
+
+  defp _tls_transport_opts() do
+    [
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      reuse_sessions: false
+    ]
   end
 
   defp _proxy_opts(config) do
@@ -80,7 +76,4 @@ defmodule GraphConn.Supervisor do
 
     {:http, address, port, opts}
   end
-
-  defp _inject_ca_cert_file(opts, nil), do: opts
-  defp _inject_ca_cert_file(opts, file_path), do: [{:cacerts, file_path} | opts]
 end
