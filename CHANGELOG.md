@@ -1,3 +1,10 @@
+# 1.9.3
+
+## Update
+
+- Use elixir 1.18.1 and otp 27.2
+- Update all deps to their latest versions
+
 # 1.9.2
 
 ## Bug fix

@@ -37,9 +37,11 @@ defmodule GraphConn.MixProject do
     |> _start_server(@mix_env)
   end
 
-  # Comment out this function if you want to run dev env against local action api.
-  defp _start_server(list, :dev),
-    do: [{:mod, {GraphConn.MockGraphApplication, []}} | list]
+  # if you are changing this settings, don't forget to force compile the app
+  unless System.get_env("USE_LOCAL_AAPI") == "true" do
+    defp _start_server(list, :dev),
+      do: [{:mod, {GraphConn.MockGraphApplication, []}} | list]
+  end
 
   defp _start_server(list, _), do: list
 
@@ -53,7 +55,7 @@ defmodule GraphConn.MixProject do
       {:certifi, "~> 2.12"},
       {:jason, "~> 1.1"},
       ## needed for action handlers only
-      {:cachex, "~> 3.3", optional: true},
+      {:cachex, "~> 4.0", optional: true},
       {:cowlib, "~> 2.9", override: true},
       {:telemetry, "~> 0.4 or ~> 1.0"},
 
