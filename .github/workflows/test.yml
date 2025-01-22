@@ -10,12 +10,12 @@ env:
 
 jobs:
   graph_conn-newer-elixir:
-    name: Full check for Elixir >= 1.15
+    name: Full check for Elixir >= 1.17
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        elixir: ["1.15", "1.16"]
-        erlang: ["25", "26"]
+        elixir: ["1.17", "1.18"]
+        erlang: ["26", "27"]
 
     steps:
       - uses: actions/checkout@v3
