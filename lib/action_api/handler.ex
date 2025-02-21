@@ -204,14 +204,25 @@ if Code.ensure_loaded?(Cachex) do
               other_waiting_tasks
             end)
 
-          _respond_with(req_id, response)
+          case other_waiting_tasks do
+            [] ->
+              # If noone is waiting for response, return result from this task
+              _respond_with(req_id, response)
 
-          for task <- other_waiting_tasks,
-              do: send(task, {:response, req_id, response})
+            [latest_waiting_task | other_waiting_tasks] ->
+              # Latest task should get result back, others can be ignored
+              send(latest_waiting_task, {:response, req_id, response})
+
+              for task <- other_waiting_tasks,
+                  do: send(task, {:response, req_id, :ignore})
+          end
         end
 
         defp _wait_for_response(req_id) do
           receive do
+            {:response, ^req_id, :ignore} ->
+              :ok
+
             {:response, ^req_id, response} ->
               _respond_with(req_id, response)
           end

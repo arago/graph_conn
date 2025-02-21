@@ -1,3 +1,9 @@
+# 1.9.4
+
+## Enhancement
+
+- When there are multiple tasks waiting for the same response, respond only to the latest one
+
 # 1.9.3
 
 ## Update
